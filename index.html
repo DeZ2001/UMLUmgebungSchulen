@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Hello World mit PyScript</title>
+
+    <!-- 🔹 PyScript jetzt lokal laden -->
+    <link rel="stylesheet" href="/vendor/pyscript/core.css">
+    <script type="module" src="/vendor/pyscript/core.js"></script>
+
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: system-ui, sans-serif;
+        background-color: #f9fafc;
+        margin: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>🪶 PyScript Beispiel</h1>
+    <p>Das hier ist ein kleines "Hello World" Programm mit Python im Browser!</p>
+
+    <!-- Ausgabebereich für unser UI-Skript -->
+    <pre id="out"></pre>
+
+    <!-- 🔹 PyScript-Konfiguration -->
+    <py-config>
+      {
+        "runtimes": [{
+          "name": "pyodide",
+          "lang": "python",
+          "src": "/vendor/pyodide/pyodide.js",
+          "indexURL": "/vendor/pyodide/"
+        }],
+        "packages": []
+      }
+      </py-config>
+
+    <!-- 🔹 Lade die UI-Logik aus src/ui.py -->
+    <py-script src="/src/ui.py"></py-script>
+  </body>
+</html>

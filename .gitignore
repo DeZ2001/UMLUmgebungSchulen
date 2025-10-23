@@ -1,0 +1,42 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+
+# PyScript / Build
+wheels/
+vendor/__pycache__/
+vendor/pyscript/*.map
+vendor/pyscript/*.log
+vendor/pyodide/__pycache__/
+vendor/pyodide/*.map
+vendor/pyodide/*.log
+
+# Node / JS (falls du später Tools nutzt)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs / System
+*.log
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# Virtual Environments (falls du lokal testest)
+venv/
+.env/
