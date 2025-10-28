@@ -1,8 +1,7 @@
-# UI-Controller - verwaltet die Benutzeroberfläche und nutzt die Geschäftslogik aus app.py
+# UI-Controller
 
 from pyscript import document
 
-# Geschäftslogik-Funktionen (aus app.py kopiert für PyScript-Kompatibilität)
 def hello():
     """Gibt eine Begrüßungsnachricht zurück"""
     return "Hello World von Python!"
