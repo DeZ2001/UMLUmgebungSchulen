@@ -4,9 +4,14 @@
     <meta charset="UTF-8">
     <title>Hello World mit PyScript</title>
 
+    
     <!-- 🔹 PyScript jetzt lokal laden -->
-    <link rel="stylesheet" href="/vendor/pyscript/core.css">
-    <script type="module" src="/vendor/pyscript/core.js"></script>
+    <!-- <link rel="stylesheet" href="vendor/pyscript/core.css">
+    <script type="module" src="vendor/pyscript/core.js"></script> -->
+
+    <!-- 🔹 PyScript von CDN laden (Online-Version) -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.2.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.2.1/core.js"></script>
 
     <style>
       body {
@@ -27,7 +32,9 @@
     <p>Das hier ist ein kleines "Hello World" Programm mit Python im Browser!</p>
 
     <!-- Ausgabebereich für unser UI-Skript -->
-    <pre id="out"></pre>
+    <pre id="out"> 
+    Test Warten auf Ausgabe...
+    </pre>
 
     <!-- 🔹 PyScript-Konfiguration -->
     <py-config type="json">
@@ -35,15 +42,15 @@
         "runtimes": [{
           "name": "pyodide",
           "lang": "python",
-          "src": "/vendor/pyodide/pyodide.js",
-          "indexURL": "/vendor/pyodide/"
+          "src": "vendor/pyodide/pyodide.js",
+          "indexURL": "vendor/pyodide/"
         }],
         "packages": [],
         "paths": ["./src"]
       }
       </py-config>
 
-    <!-- 🔹 Lade die UI-Logik aus src/ui.py -->
-    <py-script src="/src/ui.py"></py-script>
+    <!-- 🔹 Lade die UI-Logik aus src/ui.py (die wiederum app.py verwendet) -->
+    <py-script src="src/ui.py"></py-script>
   </body>
 </html>
