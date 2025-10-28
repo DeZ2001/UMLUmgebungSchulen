@@ -30,7 +30,7 @@
     <pre id="out"></pre>
 
     <!-- 🔹 PyScript-Konfiguration -->
-    <py-config>
+    <py-config type="json">
       {
         "runtimes": [{
           "name": "pyodide",
@@ -38,7 +38,8 @@
           "src": "/vendor/pyodide/pyodide.js",
           "indexURL": "/vendor/pyodide/"
         }],
-        "packages": []
+        "packages": [],
+        "paths": ["./src"]
       }
       </py-config>
 
