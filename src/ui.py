@@ -10,7 +10,7 @@ def generate_diagram(className):
         # Leere Klasse ohne Inhalt (Platzhalter-Name)
         return """
 classDiagram
-    class Klasse {
+    class PythonKlasse {
     }
 """
     else:
