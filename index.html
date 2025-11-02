@@ -2,39 +2,97 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Hello World mit PyScript</title>
+    <title>Hello World mit PyScript + Mermaid</title>
 
-    
-    <!-- 🔹 PyScript jetzt lokal laden -->
-    <!-- <link rel="stylesheet" href="vendor/pyscript/core.css">
-    <script type="module" src="vendor/pyscript/core.js"></script> -->
-
-    <!-- 🔹 PyScript von CDN laden (Online-Version) -->
+    <!-- 🔹 PyScript von CDN laden -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.2.1/core.css">
     <script type="module" src="https://pyscript.net/releases/2024.2.1/core.js"></script>
+
+    <!-- 🔹 Mermaid 在线加载（用于 UML 图） -->
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+      window.mermaid = mermaid;
+      mermaid.initialize({ startOnLoad: false, theme: "default" });
+    </script>
 
     <style>
       body {
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
-        height: 100vh;
         font-family: system-ui, sans-serif;
         background-color: #f9fafc;
         margin: 0;
+        padding: 2rem;
+      }
+      #uml {
+        margin-top: 2rem;
+        width: 90%;
+        max-width: 1000px;
+      }
+      pre#out {
+        background: #f0f0f0;
+        padding: .75rem 1rem;
+        border-radius: 6px;
+        box-shadow: 0 0 4px rgba(0,0,0,.08);
+        white-space: pre-wrap;
+      }
+      .input-group {
+        margin: 1rem 0;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+      .input-group label {
+        font-weight: 500;
+      }
+      .input-group input {
+        padding: 0.5rem 1rem;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+        min-width: 200px;
+      }
+      .input-group input:focus {
+        outline: none;
+        border-color: #4a90e2;
+      }
+      .input-group button {
+        padding: 0.5rem 1.5rem;
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .input-group button:hover {
+        background-color: #357abd;
+      }
+      .input-group button:active {
+        background-color: #2a5f8f;
       }
     </style>
   </head>
 
   <body>
-    <h1>🪶 PyScript Beispiel</h1>
-    <p>Das hier ist ein kleines "Hello World" Programm mit Python im Browser!</p>
+    <h1>🪶 PyScript + Mermaid UML Demo</h1>
+    <p>Dieses Beispiel zeigt, wie man in PyScript dynamisch UML-Klassendiagramme mit Mermaid erzeugt.</p>
 
-    <!-- Ausgabebereich für unser UI-Skript -->
-    <pre id="out"> 
-    Test Warten auf Ausgabe...
-    </pre>
+    <!-- Eingabefeld für Klassennamen -->
+    <div class="input-group">
+      <label for="className">Klassenname:</label>
+      <input type="text" id="className" placeholder="z.B. Person, Student..." value="Name der Klasse" />
+      <button id="submitBtn" type="button" py-onClick="update_diagram()">Übernehmen</button>
+    </div>
+
+    <!-- Status-Ausgabe -->
+    <pre id="out">Lade UML-Diagramm...</pre>
+
+    <!-- UML 容器：Mermaid 渲染出的 SVG 会插入到这里 -->
+    <div id="uml"></div>
 
     <!-- 🔹 PyScript-Konfiguration -->
     <py-config type="json">
@@ -48,9 +106,9 @@
         "packages": [],
         "paths": ["./src"]
       }
-      </py-config>
+    </py-config>
 
-    <!-- 🔹 Lade die UI-Logik aus src/ui.py (die wiederum app.py verwendet) -->
+    <!-- 🔹 Lade die UI-Logik（Python 里调用 Mermaid 渲染） -->
     <py-script src="src/ui.py"></py-script>
   </body>
 </html>
