@@ -6,7 +6,8 @@ import asyncio
 diagram_counter = 0
 
 # Liste der Attribute und Methoden
-items_list = []  # Liste von Dictionaries: {"type": "attribute"/"method", "visibility": "public"/"private"/"protected", "name": "name"}
+# Liste von Dictionaries: {"type": "attribute"/"method", "visibility": "public"/"private"/"protected", "name": "name"}
+items_list = []  
 
 def generate_diagram(className):
     """Erzeugt das Mermaid-Diagramm basierend auf dem Klassennamen und den Items"""
@@ -69,7 +70,7 @@ def update_items_list():
             escaped_name = item_name.replace('"', '&quot;').replace("'", "&#39;")
             
             html += f"""
-                <div class="item-entry" id="item-entry-{i}">
+                    <div class="item-entry" id="item-entry-{i}">
                     <span class="item-label">Element {i+1}:</span>
                     <select id="item-type-{i}">
                         <option value="attribute" {"selected" if item_type == "attribute" else ""}>Attribut</option>
@@ -80,10 +81,10 @@ def update_items_list():
                         <option value="private" {"selected" if visibility == "private" else ""}>Private (-)</option>
                         <option value="protected" {"selected" if visibility == "protected" else ""}>Protected (#)</option>
                     </select>
-                    <input type="text" id="item-name-{i}" value="{escaped_name}" />
-                    <button py-onClick="remove_item({i})" type="button">Entfernen</button>
-                </div>
-            """
+                <input type="text" id="item-name-{i}" value="{escaped_name}" />
+                <button id="remove-btn-{i}" data-index="{i}" type="button">Entfernen</button>
+            </div>
+        """
         
         items_list_elem.innerHTML = html
         
@@ -125,6 +126,18 @@ def update_items_list():
                 name_elem.onchange = name_proxy
                 name_elem._input_proxy = name_proxy
                 name_elem._change_proxy = name_proxy
+
+
+            remove_btn = document.getElementById(f"remove-btn-{i}")
+            if remove_btn:
+                def make_remove_handler(idx):
+                    def handler(e):
+                        remove_item(idx)
+                    return handler
+                remove_proxy = create_proxy(make_remove_handler(i))
+                remove_btn.addEventListener("click", remove_proxy)
+                remove_btn.onclick = remove_proxy
+                remove_btn._click_proxy = remove_proxy
                 
     except Exception as e:
         output = document.getElementById("out")
@@ -483,6 +496,8 @@ async def init():
         
         # Initialisiere die Items-Liste
         update_items_list()
+
+        
         
         # Initialisiere Modal-Event-Listener
         modal = document.getElementById("editModal")
