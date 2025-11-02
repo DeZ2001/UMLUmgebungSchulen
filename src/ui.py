@@ -1,28 +1,149 @@
 from js import window, document
+from pyodide.ffi import create_proxy
 import asyncio
 
 # Zähler für eindeutige Diagramm-IDs
 diagram_counter = 0
 
+# Liste der Attribute und Methoden
+items_list = []  # Liste von Dictionaries: {"type": "attribute"/"method", "visibility": "public"/"private"/"protected", "name": "name"}
+
 def generate_diagram(className):
-    """Erzeugt das Mermaid-Diagramm basierend auf dem Klassennamen"""
+    """Erzeugt das Mermaid-Diagramm basierend auf dem Klassennamen und den Items"""
+    global items_list
+    
+    # Bestimme den Klassennamen
     if not className or className.strip() == "":
-        # Leere Klasse ohne Inhalt (Platzhalter-Name)
-        return """
-classDiagram
-    class PythonKlasse {
-    }
-"""
+        clean_name = "PythonKlasse"
     else:
-        # Klasse mit dem eingegebenen Namen (leer, nur der Name)
-        clean_name = className.strip()
-        # Entferne Leerzeichen und Sonderzeichen, die Mermaid nicht mag
-        clean_name = clean_name.replace(" ", "")
-        return f"""
-classDiagram
-    class {clean_name} {{
-    }}
-"""
+        clean_name = className.strip().replace(" ", "")
+    
+    # Erstelle den Diagramm-String
+    diagram_lines = [f"classDiagram", f"    class {clean_name} {{"]
+    
+    # Füge Attribute hinzu
+    attributes = [item for item in items_list if item.get("type") == "attribute"]
+    if attributes:
+        for attr in attributes:
+            visibility_symbol = {"public": "+", "private": "-", "protected": "#"}.get(attr.get("visibility", "public"), "+")
+            attr_name = attr.get("name", "").strip()
+            if attr_name:
+                diagram_lines.append(f"        {visibility_symbol}{attr_name}")
+    
+    # Füge Methoden hinzu
+    methods = [item for item in items_list if item.get("type") == "method"]
+    if methods:
+        # Leerzeile zwischen Attributen und Methoden
+        if attributes:
+            diagram_lines.append("")
+        for method in methods:
+            visibility_symbol = {"public": "+", "private": "-", "protected": "#"}.get(method.get("visibility", "public"), "+")
+            method_name = method.get("name", "").strip()
+            if method_name:
+                diagram_lines.append(f"        {visibility_symbol}{method_name}()")
+    
+    diagram_lines.append("    }")
+    
+    return "\n".join(diagram_lines)
+
+def update_items_list():
+    """Aktualisiert die Anzeige der Items-Liste mit editierbaren Feldern"""
+    global items_list
+    
+    try:
+        items_list_elem = document.getElementById("itemsList")
+        if not items_list_elem:
+            return
+        
+        if not items_list:
+            items_list_elem.innerHTML = "<p style='color: #666; font-style: italic; padding: 1rem;'>Keine Attribute/Methoden hinzugefügt.</p>"
+            return
+        
+        html = ""
+        for i, item in enumerate(items_list):
+            item_type = item.get("type", "attribute")
+            visibility = item.get("visibility", "public")
+            item_name = item.get("name", "")
+            
+            # Escape quotes im Namen
+            escaped_name = item_name.replace('"', '&quot;').replace("'", "&#39;")
+            
+            html += f"""
+                <div class="item-entry" id="item-entry-{i}">
+                    <span class="item-label">Element {i+1}:</span>
+                    <select id="item-type-{i}">
+                        <option value="attribute" {"selected" if item_type == "attribute" else ""}>Attribut</option>
+                        <option value="method" {"selected" if item_type == "method" else ""}>Methode</option>
+                    </select>
+                    <select id="item-visibility-{i}">
+                        <option value="public" {"selected" if visibility == "public" else ""}>Public (+)</option>
+                        <option value="private" {"selected" if visibility == "private" else ""}>Private (-)</option>
+                        <option value="protected" {"selected" if visibility == "protected" else ""}>Protected (#)</option>
+                    </select>
+                    <input type="text" id="item-name-{i}" value="{escaped_name}" />
+                    <button py-onClick="remove_item({i})" type="button">Entfernen</button>
+                </div>
+            """
+        
+        items_list_elem.innerHTML = html
+        
+        # Füge Event-Listener zu allen neuen Elementen hinzu
+        for i in range(len(items_list)):
+            type_elem = document.getElementById(f"item-type-{i}")
+            visibility_elem = document.getElementById(f"item-visibility-{i}")
+            name_elem = document.getElementById(f"item-name-{i}")
+            
+            if type_elem:
+                def make_type_handler(idx):
+                    def handler(e):
+                        update_item_field(idx, "type", e.target.value)
+                    return handler
+                type_proxy = create_proxy(make_type_handler(i))
+                type_elem.addEventListener("change", type_proxy)
+                type_elem.onchange = type_proxy
+                type_elem._change_proxy = type_proxy
+            
+            if visibility_elem:
+                def make_visibility_handler(idx):
+                    def handler(e):
+                        update_item_field(idx, "visibility", e.target.value)
+                    return handler
+                visibility_proxy = create_proxy(make_visibility_handler(i))
+                visibility_elem.addEventListener("change", visibility_proxy)
+                visibility_elem.onchange = visibility_proxy
+                visibility_elem._change_proxy = visibility_proxy
+            
+            if name_elem:
+                def make_name_handler(idx):
+                    def handler(e):
+                        update_item_field(idx, "name", e.target.value)
+                    return handler
+                name_proxy = create_proxy(make_name_handler(i))
+                name_elem.addEventListener("input", name_proxy)
+                name_elem.addEventListener("change", name_proxy)
+                name_elem.oninput = name_proxy
+                name_elem.onchange = name_proxy
+                name_elem._input_proxy = name_proxy
+                name_elem._change_proxy = name_proxy
+                
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Aktualisieren der Liste: {str(e)}"
+
+def update_item_field(index, field, value):
+    """Aktualisiert ein einzelnes Feld eines Items"""
+    global items_list
+    try:
+        if 0 <= index < len(items_list):
+            items_list[index][field] = value
+            # Update das Diagramm sofort
+            update_diagram()
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Aktualisieren: {str(e)}"
+
 
 async def render_uml(className=""):
     """Rendert das UML-Diagramm mit dem gegebenen Klassennamen"""
@@ -66,10 +187,6 @@ def update_diagram():
         input_element = document.getElementById("className")
         if input_element:
             className = input_element.value
-            # Debug-Ausgabe
-            output = document.getElementById("out")
-            if output:
-                output.textContent = f"Update Diagramm mit Klasse: '{className}'..."
             # Starte das Rendern
             asyncio.ensure_future(render_uml(className))
         else:
@@ -80,6 +197,189 @@ def update_diagram():
         output = document.getElementById("out")
         if output:
             output.textContent = f"Fehler in update_diagram: {str(e)}"
+
+def add_item():
+    """Fügt ein neues Attribut oder eine Methode hinzu"""
+    global items_list
+    try:
+        item_type_elem = document.getElementById("itemType")
+        visibility_elem = document.getElementById("visibility")
+        name_elem = document.getElementById("itemName")
+        
+        if not item_type_elem or not visibility_elem or not name_elem:
+            return
+        
+        item_type = item_type_elem.value
+        visibility = visibility_elem.value
+        name = name_elem.value.strip()
+        
+        if not name:
+            output = document.getElementById("out")
+            if output:
+                output.textContent = "Bitte geben Sie einen Namen ein."
+            return
+        
+        # Füge das Item zur Liste hinzu
+        new_item = {
+            "type": item_type,
+            "visibility": visibility,
+            "name": name
+        }
+        items_list.append(new_item)
+        
+        # Leere das Eingabefeld
+        name_elem.value = ""
+        
+        # Update die Items-Liste
+        update_items_list()
+        
+        # Update das Diagramm
+        update_diagram()
+        
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"{'Attribut' if item_type == 'attribute' else 'Methode'} '{name}' hinzugefügt."
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Hinzufügen: {str(e)}"
+
+def remove_item(index):
+    """Entfernt ein Item aus der Liste"""
+    global items_list
+    try:
+        if 0 <= index < len(items_list):
+            removed = items_list.pop(index)
+            update_items_list()
+            update_diagram()
+            output = document.getElementById("out")
+            if output:
+                output.textContent = f"{'Attribut' if removed['type'] == 'attribute' else 'Methode'} '{removed['name']}' entfernt."
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Entfernen: {str(e)}"
+
+def open_edit_modal(item_index):
+    """Öffnet das Edit-Modal für ein bestimmtes Item"""
+    global items_list
+    try:
+        if item_index < 0 or item_index >= len(items_list):
+            return
+        
+        item = items_list[item_index]
+        
+        # Setze die Werte im Modal
+        edit_type = document.getElementById("editType")
+        edit_visibility = document.getElementById("editVisibility")
+        edit_name = document.getElementById("editName")
+        modal = document.getElementById("editModal")
+        
+        if edit_type and edit_visibility and edit_name and modal:
+            edit_type.value = item.get("type", "attribute")
+            edit_visibility.value = item.get("visibility", "public")
+            edit_name.value = item.get("name", "")
+            
+            # Speichere den aktuellen Index im Modal
+            modal.setAttribute("data-edit-index", str(item_index))
+            
+            # Öffne das Modal
+            modal.classList.add("active")
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Öffnen des Modals: {str(e)}"
+
+def close_edit_modal():
+    """Schließt das Edit-Modal"""
+    modal = document.getElementById("editModal")
+    if modal:
+        modal.classList.remove("active")
+
+def save_item_from_modal():
+    """Speichert Änderungen aus dem Modal"""
+    global items_list
+    try:
+        modal = document.getElementById("editModal")
+        if not modal:
+            return
+        
+        item_index_str = modal.getAttribute("data-edit-index")
+        if not item_index_str:
+            return
+        
+        item_index = int(item_index_str)
+        if item_index < 0 or item_index >= len(items_list):
+            return
+        
+        edit_type = document.getElementById("editType")
+        edit_visibility = document.getElementById("editVisibility")
+        edit_name = document.getElementById("editName")
+        
+        if edit_type and edit_visibility and edit_name:
+            items_list[item_index]["type"] = edit_type.value
+            items_list[item_index]["visibility"] = edit_visibility.value
+            items_list[item_index]["name"] = edit_name.value.strip()
+            
+            # Schließe das Modal
+            close_edit_modal()
+            
+            # Update das Diagramm
+            update_diagram()
+            
+            output = document.getElementById("out")
+            if output:
+                output.textContent = "Änderungen gespeichert!"
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Speichern: {str(e)}"
+
+def delete_item_from_modal():
+    """Löscht ein Item aus dem Modal"""
+    global items_list
+    try:
+        modal = document.getElementById("editModal")
+        if not modal:
+            return
+        
+        item_index_str = modal.getAttribute("data-edit-index")
+        if not item_index_str:
+            return
+        
+        item_index = int(item_index_str)
+        if item_index < 0 or item_index >= len(items_list):
+            return
+        
+        # Entferne das Item
+        removed = items_list.pop(item_index)
+        
+        # Schließe das Modal
+        close_edit_modal()
+        
+        # Update das Diagramm
+        update_diagram()
+        
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"{'Attribut' if removed['type'] == 'attribute' else 'Methode'} '{removed['name']}' wurde gelöscht."
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Löschen: {str(e)}"
+
+def update_item_field(index, field, value):
+    """Aktualisiert ein einzelnes Feld eines Items"""
+    global items_list
+    try:
+        if 0 <= index < len(items_list):
+            items_list[index][field] = value
+            # Update das Diagramm sofort
+            update_diagram()
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Aktualisieren: {str(e)}"
 
 def on_class_name_change(event):
     """Callback-Funktion für Input-Änderungen (optional - live update)"""
@@ -112,6 +412,17 @@ def on_input_keypress(event):
         output = document.getElementById("out")
         if output:
             output.textContent = f"Fehler in on_input_keypress: {str(e)}"
+
+def on_item_name_keypress(event):
+    """Callback-Funktion für Enter-Taste im Item-Name-Feld"""
+    try:
+        if event.key == "Enter":
+            event.preventDefault()
+            add_item()
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler in on_item_name_keypress: {str(e)}"
 
 async def init():
     """Initialisiert die Anwendung"""
@@ -154,12 +465,74 @@ async def init():
             output.textContent = f"Fehler beim Registrieren der Event-Listener: {str(e)}"
         return
     
+    # Füge Event-Listener für Item-Hinzufügen hinzu
+    try:
+        add_item_btn = document.getElementById("addItemBtn")
+        item_name_input = document.getElementById("itemName")
+        
+        if add_item_btn:
+            def add_item_wrapper(e):
+                add_item()
+            add_item_proxy = create_proxy(add_item_wrapper)
+            add_item_btn.addEventListener("click", add_item_proxy)
+            add_item_btn.onclick = add_item_proxy
+            add_item_btn._click_proxy = add_item_proxy
+        
+        if item_name_input:
+            item_name_input.addEventListener("keypress", on_item_name_keypress)
+        
+        # Initialisiere die Items-Liste
+        update_items_list()
+        
+        # Initialisiere Modal-Event-Listener
+        modal = document.getElementById("editModal")
+        save_btn = document.getElementById("saveBtn")
+        cancel_btn = document.getElementById("cancelBtn")
+        delete_btn = document.getElementById("deleteBtn")
+        
+        if save_btn:
+            def save_handler(e):
+                save_item_from_modal()
+            save_proxy = create_proxy(save_handler)
+            save_btn.addEventListener("click", save_proxy)
+            save_btn.onclick = save_proxy
+            save_btn._click_proxy = save_proxy
+        
+        if cancel_btn:
+            def cancel_handler(e):
+                close_edit_modal()
+            cancel_proxy = create_proxy(cancel_handler)
+            cancel_btn.addEventListener("click", cancel_proxy)
+            cancel_btn.onclick = cancel_proxy
+            cancel_btn._click_proxy = cancel_proxy
+        
+        if delete_btn:
+            def delete_handler(e):
+                delete_item_from_modal()
+            delete_proxy = create_proxy(delete_handler)
+            delete_btn.addEventListener("click", delete_proxy)
+            delete_btn.onclick = delete_proxy
+            delete_btn._click_proxy = delete_proxy
+        
+        # Schließe Modal bei Klick außerhalb
+        if modal:
+            def modal_click_handler(e):
+                if e.target == modal:
+                    close_edit_modal()
+            modal_proxy = create_proxy(modal_click_handler)
+            modal.addEventListener("click", modal_proxy)
+            modal.onclick = modal_proxy
+            modal._click_proxy = modal_proxy
+    except Exception as e:
+        if output:
+            output.textContent = f"Fehler beim Initialisieren der Items: {str(e)}"
+    
     # Rendere initial ein leeres Diagramm
     await render_uml("")
     
     # Update Output
     if output:
-        output.textContent = "Bereit! Geben Sie einen Klassennamen ein und klicken Sie auf 'Übernehmen' oder drücken Sie Enter."
+        output.textContent = "Bereit! Klicken Sie im UML-Diagramm auf Attribute/Methoden zum Bearbeiten."
 
 # Warte kurz, damit das DOM vollständig geladen ist
 async def delayed_init():
