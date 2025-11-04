@@ -53,24 +53,33 @@ def generate_diagram(className):
 def update_items_list():
     """Aktualisiert die Anzeige der Items-Liste mit editierbaren Feldern"""
     global items_list
-    
+
     try:
         items_list_elem = document.getElementById("itemsList")
         if not items_list_elem:
             return
-        
+
+        # Wenn leer: Hinweis zeigen und fertig
         if not items_list:
-            items_list_elem.innerHTML = "<p style='color: #666; font-style: italic; padding: 1rem;'>Keine Attribute/Methoden hinzugefügt.</p>"
-        for item_index, item in enumerate(items_list):
+            items_list_elem.innerHTML = (
+                "<p style='color: #666; font-style: italic; padding: 1rem;'>"
+                "Keine Attribute/Methoden hinzugefügt.</p>"
+            )
+            return
+
+        # HTML neu aufbauen
+        html = ""
+        for i, item in enumerate(items_list):
             item_type = item.get("type", "attribute")
             visibility = item.get("visibility", "public")
             item_name = item.get("name", "")
-            
-            # Escape quotes im Namen
-            escaped_name = item_name.replace('"', '&quot;').replace("'", "&#39;")
-            
+
+            escaped_name = (
+                item_name.replace('"', '&quot;').replace("'", "&#39;")
+            )
+
             html += f"""
-                    <div class="item-entry" id="item-entry-{i}">
+                <div class="item-entry" id="item-entry-{i}">
                     <span class="item-label">Element {i+1}:</span>
                     <select id="item-type-{i}">
                         <option value="attribute" {"selected" if item_type == "attribute" else ""}>Attribut</option>
@@ -81,69 +90,89 @@ def update_items_list():
                         <option value="private" {"selected" if visibility == "private" else ""}>Private (-)</option>
                         <option value="protected" {"selected" if visibility == "protected" else ""}>Protected (#)</option>
                     </select>
-                <input type="text" id="item-name-{i}" value="{escaped_name}" />
-                <button id="remove-btn-{i}" data-index="{i}" type="button">Entfernen</button>
-                <button id="edit-btn-{i}" data-index="{i}" type="button">Bearbeiten</button>
-            </div>
-        """
-        
+                    <input type="text" id="item-name-{i}" value="{escaped_name}" />
+                    <button id="remove-btn-{i}" data-index="{i}" type="button">Entfernen</button>
+                    <button id="edit-btn-{i}" data-index="{i}" type="button">Bearbeiten</button>
+                </div>
+            """
+
+        # Re-Render
         items_list_elem.innerHTML = html
-        
-        # Dictionary to store proxies for cleanup and memory management
+
+        # Proxies-Container (gegen GC)
         if not hasattr(update_items_list, "proxies"):
             update_items_list.proxies = {}
         proxies = update_items_list.proxies
         proxies.clear()
 
-        # Füge Event-Listener zu allen neuen Elementen hinzu
+        # Event-Listener neu binden
         for i in range(len(items_list)):
+            # Typ ändern
             type_elem = document.getElementById(f"item-type-{i}")
-            visibility_elem = document.getElementById(f"item-visibility-{i}")
-            name_elem = document.getElementById(f"item-name-{i}")
-
             if type_elem:
                 def make_type_handler(idx):
                     def handler(e):
                         update_item_field(idx, "type", e.target.value)
                     return handler
-                type_proxy = create_proxy(make_type_handler(i))
-                type_elem.addEventListener("change", type_proxy)
-                type_elem.onchange = type_proxy
-                proxies[f"type-{i}"] = type_proxy
+                p = create_proxy(make_type_handler(i))
+                type_elem.addEventListener("change", p)
+                type_elem.onchange = p
+                proxies[f"type-{i}"] = p
 
+            # Sichtbarkeit ändern
+            visibility_elem = document.getElementById(f"item-visibility-{i}")
             if visibility_elem:
                 def make_visibility_handler(idx):
                     def handler(e):
                         update_item_field(idx, "visibility", e.target.value)
                     return handler
-                visibility_proxy = create_proxy(make_visibility_handler(i))
-                visibility_elem.addEventListener("change", visibility_proxy)
-                visibility_elem.onchange = visibility_proxy
-                proxies[f"visibility-{i}"] = visibility_proxy
+                p = create_proxy(make_visibility_handler(i))
+                visibility_elem.addEventListener("change", p)
+                visibility_elem.onchange = p
+                proxies[f"visibility-{i}"] = p
 
+            # Name ändern
+            name_elem = document.getElementById(f"item-name-{i}")
             if name_elem:
                 def make_name_handler(idx):
                     def handler(e):
                         update_item_field(idx, "name", e.target.value)
                     return handler
-                name_proxy = create_proxy(make_name_handler(i))
-                name_elem.addEventListener("input", name_proxy)
-                name_elem.addEventListener("change", name_proxy)
+                p = create_proxy(make_name_handler(i))
+                name_elem.addEventListener("input", p)
+                name_elem.addEventListener("change", p)
+                proxies[f"name-{i}"] = p
+
+            # Entfernen-Button
             remove_btn = document.getElementById(f"remove-btn-{i}")
             if remove_btn:
                 def make_remove_handler(idx):
                     def handler(e):
                         remove_item(idx)
                     return handler
-                remove_proxy = create_proxy(make_remove_handler(i))
-                remove_btn.addEventListener("click", remove_proxy)
-                remove_btn.onclick = remove_proxy
-                remove_btn._click_proxy = remove_proxy
+                p = create_proxy(make_remove_handler(i))
+                remove_btn.addEventListener("click", p)
+                remove_btn.onclick = p
+                proxies[f"remove-{i}"] = p
 
+            # Bearbeiten-Button (Modal öffnen)
             edit_btn = document.getElementById(f"edit-btn-{i}")
             if edit_btn:
                 def make_edit_handler(idx):
                     def handler(e):
+                        open_edit_modal(idx)
+                    return handler
+                p = create_proxy(make_edit_handler(i))
+                edit_btn.addEventListener("click", p)
+                edit_btn.onclick = p
+                proxies[f"edit-{i}"] = p
+
+    except Exception as e:
+        output = document.getElementById("out")
+        if output:
+            output.textContent = f"Fehler beim Aktualisieren der Liste: {str(e)}"
+
+def update_item_field(index, field, value):
     """Aktualisiert ein einzelnes Feld eines Items"""
     global items_list
     try:
