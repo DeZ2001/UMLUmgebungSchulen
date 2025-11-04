@@ -9,6 +9,9 @@ diagram_counter = 0
 # Liste von Dictionaries: {"type": "attribute"/"method", "visibility": "public"/"private"/"protected", "name": "name"}
 items_list = []  
 
+# Sichtbarkeitssymbole als Konstante
+VISIBILITY_SYMBOLS = {"public": "+", "private": "-", "protected": "#"}
+
 def generate_diagram(className):
     """Erzeugt das Mermaid-Diagramm basierend auf dem Klassennamen und den Items"""
     global items_list
@@ -26,7 +29,7 @@ def generate_diagram(className):
     attributes = [item for item in items_list if item.get("type") == "attribute"]
     if attributes:
         for attr in attributes:
-            visibility_symbol = {"public": "+", "private": "-", "protected": "#"}.get(attr.get("visibility", "public"), "+")
+            visibility_symbol = VISIBILITY_SYMBOLS.get(attr.get("visibility", "public"), "+")
             attr_name = attr.get("name", "").strip()
             if attr_name:
                 diagram_lines.append(f"        {visibility_symbol}{attr_name}")
@@ -38,7 +41,7 @@ def generate_diagram(className):
         if attributes:
             diagram_lines.append("")
         for method in methods:
-            visibility_symbol = {"public": "+", "private": "-", "protected": "#"}.get(method.get("visibility", "public"), "+")
+            visibility_symbol = VISIBILITY_SYMBOLS.get(method.get("visibility", "public"), "+")
             method_name = method.get("name", "").strip()
             if method_name:
                 diagram_lines.append(f"        {visibility_symbol}{method_name}()")
@@ -58,10 +61,7 @@ def update_items_list():
         
         if not items_list:
             items_list_elem.innerHTML = "<p style='color: #666; font-style: italic; padding: 1rem;'>Keine Attribute/Methoden hinzugefügt.</p>"
-            return
-        
-        html = ""
-        for i, item in enumerate(items_list):
+        for item_index, item in enumerate(items_list):
             item_type = item.get("type", "attribute")
             visibility = item.get("visibility", "public")
             item_name = item.get("name", "")
@@ -83,17 +83,24 @@ def update_items_list():
                     </select>
                 <input type="text" id="item-name-{i}" value="{escaped_name}" />
                 <button id="remove-btn-{i}" data-index="{i}" type="button">Entfernen</button>
+                <button id="edit-btn-{i}" data-index="{i}" type="button">Bearbeiten</button>
             </div>
         """
         
         items_list_elem.innerHTML = html
         
+        # Dictionary to store proxies for cleanup and memory management
+        if not hasattr(update_items_list, "proxies"):
+            update_items_list.proxies = {}
+        proxies = update_items_list.proxies
+        proxies.clear()
+
         # Füge Event-Listener zu allen neuen Elementen hinzu
         for i in range(len(items_list)):
             type_elem = document.getElementById(f"item-type-{i}")
             visibility_elem = document.getElementById(f"item-visibility-{i}")
             name_elem = document.getElementById(f"item-name-{i}")
-            
+
             if type_elem:
                 def make_type_handler(idx):
                     def handler(e):
@@ -102,8 +109,8 @@ def update_items_list():
                 type_proxy = create_proxy(make_type_handler(i))
                 type_elem.addEventListener("change", type_proxy)
                 type_elem.onchange = type_proxy
-                type_elem._change_proxy = type_proxy
-            
+                proxies[f"type-{i}"] = type_proxy
+
             if visibility_elem:
                 def make_visibility_handler(idx):
                     def handler(e):
@@ -112,8 +119,8 @@ def update_items_list():
                 visibility_proxy = create_proxy(make_visibility_handler(i))
                 visibility_elem.addEventListener("change", visibility_proxy)
                 visibility_elem.onchange = visibility_proxy
-                visibility_elem._change_proxy = visibility_proxy
-            
+                proxies[f"visibility-{i}"] = visibility_proxy
+
             if name_elem:
                 def make_name_handler(idx):
                     def handler(e):
@@ -122,12 +129,6 @@ def update_items_list():
                 name_proxy = create_proxy(make_name_handler(i))
                 name_elem.addEventListener("input", name_proxy)
                 name_elem.addEventListener("change", name_proxy)
-                name_elem.oninput = name_proxy
-                name_elem.onchange = name_proxy
-                name_elem._input_proxy = name_proxy
-                name_elem._change_proxy = name_proxy
-
-
             remove_btn = document.getElementById(f"remove-btn-{i}")
             if remove_btn:
                 def make_remove_handler(idx):
@@ -138,13 +139,11 @@ def update_items_list():
                 remove_btn.addEventListener("click", remove_proxy)
                 remove_btn.onclick = remove_proxy
                 remove_btn._click_proxy = remove_proxy
-                
-    except Exception as e:
-        output = document.getElementById("out")
-        if output:
-            output.textContent = f"Fehler beim Aktualisieren der Liste: {str(e)}"
 
-def update_item_field(index, field, value):
+            edit_btn = document.getElementById(f"edit-btn-{i}")
+            if edit_btn:
+                def make_edit_handler(idx):
+                    def handler(e):
     """Aktualisiert ein einzelnes Feld eines Items"""
     global items_list
     try:
@@ -492,7 +491,10 @@ async def init():
             add_item_btn._click_proxy = add_item_proxy
         
         if item_name_input:
-            item_name_input.addEventListener("keypress", on_item_name_keypress)
+            item_name_keypress_proxy = create_proxy(on_item_name_keypress)
+            item_name_input.addEventListener("keypress", item_name_keypress_proxy)
+            item_name_input.onkeypress = item_name_keypress_proxy
+            item_name_input._keypress_proxy = item_name_keypress_proxy
         
         # Initialisiere die Items-Liste
         update_items_list()
