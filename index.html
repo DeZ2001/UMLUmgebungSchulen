@@ -30,6 +30,29 @@
         margin-top: 4rem;
         width: 90%;
         max-width: 1000px;
+        position: relative;
+      }
+      #uml svg {
+        display: block;
+      }
+      .edit-button-overlay {
+        position: absolute !important;
+        background: white !important;
+        border: 1px solid #ddd !important;
+        border-radius: 4px !important;
+        padding: 2px 8px !important;
+        font-size: 0.75rem !important;
+        cursor: pointer !important;
+        color: #4a90e2 !important;
+        z-index: 100 !important;
+        white-space: nowrap !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+        font-weight: 500 !important;
+      }
+      .edit-button-overlay:hover {
+        background: #4a90e2 !important;
+        color: white !important;
+        border-color: #4a90e2 !important;
       }
       pre#out {
         background: #f0f0f0;
@@ -74,6 +97,201 @@
       .input-group button:active {
         background-color: #2a5f8f;
       }
+      .add-item-group {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        max-width: 800px;
+        width: 90%;
+      }
+      .add-item-group h3 {
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+      }
+      .add-item-controls {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+      .add-item-controls select {
+        padding: 0.5rem;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+      }
+      .add-item-controls input {
+        flex: 1;
+        min-width: 150px;
+        padding: 0.5rem 1rem;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+      }
+      .add-item-controls button {
+        padding: 0.5rem 1rem;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .add-item-controls button:hover {
+        background-color: #218838;
+      }
+      .item-type-select {
+        padding: 0.5rem;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+      }
+      .items-list {
+        margin-top: 1rem;
+      }
+      .item-entry {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #e0e0e0;
+      }
+      .item-entry select {
+        padding: 0.4rem 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        background: white;
+      }
+      .item-entry input {
+        flex: 1;
+        padding: 0.4rem 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        min-width: 120px;
+      }
+      .item-entry input:focus,
+      .item-entry select:focus {
+        outline: none;
+        border-color: #4a90e2;
+      }
+      .item-entry .item-label {
+        min-width: 80px;
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 500;
+      }
+      .item-entry button {
+        padding: 0.4rem 0.75rem;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        white-space: nowrap;
+      }
+      .item-entry button:hover {
+        background-color: #c82333;
+      }
+      /* SVG-Interaktivität */
+      #uml svg text {
+        cursor: pointer;
+        transition: fill 0.2s;
+      }
+      #uml svg text:hover {
+        fill: #4a90e2;
+      }
+      /* Modal für Editierung */
+      .edit-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+      .edit-modal.active {
+        display: flex;
+      }
+      .edit-modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 90%;
+      }
+      .edit-modal-content h3 {
+        margin: 0 0 1.5rem 0;
+      }
+      .edit-modal-content .form-group {
+        margin-bottom: 1rem;
+      }
+      .edit-modal-content label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+      .edit-modal-content select,
+      .edit-modal-content input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 1rem;
+        box-sizing: border-box;
+      }
+      .edit-modal-content select:focus,
+      .edit-modal-content input:focus {
+        outline: none;
+        border-color: #4a90e2;
+      }
+      .edit-modal-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 1.5rem;
+      }
+      .edit-modal-buttons button {
+        padding: 0.5rem 1.5rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .edit-modal-buttons .btn-save {
+        background-color: #28a745;
+        color: white;
+      }
+      .edit-modal-buttons .btn-save:hover {
+        background-color: #218838;
+      }
+      .edit-modal-buttons .btn-cancel {
+        background-color: #6c757d;
+        color: white;
+      }
+      .edit-modal-buttons .btn-cancel:hover {
+        background-color: #5a6268;
+      }
+      .edit-modal-buttons .btn-delete {
+        background-color: #dc3545;
+        color: white;
+      }
+      .edit-modal-buttons .btn-delete:hover {
+        background-color: #c82333;
+      }
     </style>
   </head>
 
@@ -88,11 +306,63 @@
       <button id="submitBtn" type="button" py-onClick="update_diagram()">Generieren</button>
     </div>
 
+    <!-- Hinzufügen von Attributen/Methoden -->
+    <div class="add-item-group">
+      <h3>Attribute/Methoden hinzufügen</h3>
+      <div class="add-item-controls">
+        <select id="itemType" class="item-type-select">
+          <option value="attribute">Attribut</option>
+          <option value="method">Methode</option>
+        </select>
+        <select id="visibility" class="item-type-select">
+          <option value="public">Public (+)</option>
+          <option value="private">Private (-)</option>
+          <option value="protected">Protected (#)</option>
+        </select>
+        <input type="text" id="itemName" placeholder="z.B. name, getName()..." />
+        <button id="addItemBtn" type="button" py-onClick="add_item()">Hinzufügen</button>
+      </div>
+      <div class="items-list">
+        <div id="itemsList"></div>
+      </div>
+    </div>
+
     <!-- Status-Ausgabe -->
     <pre id="out">Lade UML-Diagramm...</pre>
 
     <!-- UML 容器：Mermaid 渲染出的 SVG 会插入到这里 -->
     <div id="uml"></div>
+
+    <!-- Edit-Modal -->
+    <div id="editModal" class="edit-modal">
+      <div class="edit-modal-content">
+        <h3>Element bearbeiten</h3>
+        <div class="form-group">
+          <label for="editType">Typ:</label>
+          <select id="editType">
+            <option value="attribute">Attribut</option>
+            <option value="method">Methode</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editVisibility">Sichtbarkeit:</label>
+          <select id="editVisibility">
+            <option value="public">Public (+)</option>
+            <option value="private">Private (-)</option>
+            <option value="protected">Protected (#)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editName">Name:</label>
+          <input type="text" id="editName" />
+        </div>
+        <div class="edit-modal-buttons">
+          <button id="deleteBtn" class="btn-delete">Löschen</button>
+          <button id="cancelBtn" class="btn-cancel">Abbrechen</button>
+          <button id="saveBtn" class="btn-save">Speichern</button>
+        </div>
+      </div>
+    </div>
 
     <!-- 🔹 PyScript-Konfiguration -->
     <py-config type="json">
