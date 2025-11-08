@@ -56,7 +56,7 @@ def generate_diagram(className):
                 if return_type:
                     # Mermaid rendert besser ohne Leerzeichen: "methodName(): returnType"
                     # Das Leerzeichen wird dann durch die Buttons hinzugefügt
-                    line += f": {return_type}"
+                    line += f"{return_type}"
                 diagram_lines.append(line)
     
     diagram_lines.append("    }")
