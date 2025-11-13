@@ -320,6 +320,7 @@
           <option value="protected">Protected (#)</option>
         </select>
         <input type="text" id="itemName" placeholder="z.B. name, getName()..." />
+        <input type="text" id="itemDatatype" placeholder="Datentyp, z.B. string" />
         <button id="addItemBtn" type="button" py-onClick="add_item()">Hinzufügen</button>
       </div>
       <div class="items-list">
@@ -355,6 +356,10 @@
         <div class="form-group">
           <label for="editName">Name:</label>
           <input type="text" id="editName" />
+        </div>
+        <div class="form-group">
+          <label for="editDatatype">Datentyp:</label>
+          <input type="text" id="editDatatype" placeholder="z.B. string, int" />
         </div>
         <div class="edit-modal-buttons">
           <button id="deleteBtn" class="btn-delete">Löschen</button>
