@@ -188,44 +188,55 @@ def update_items_list():
                         pass
                 
                 # Erstelle einen eindeutigen Handler für diesen Button
-                # Verwende eine Closure, die den Index aus dem data-index Attribut liest
-                def create_remove_handler(btn_element):
-                    handler_called = False
+                # Verwende den Index i direkt in der Closure
+                def make_remove_handler(idx):
+                    # Verwende ein Set, um zu verfolgen, welche Handler bereits ausgeführt wurden
+                    executed_handlers = set()
                     def handler(e):
-                        nonlocal handler_called
-                        if handler_called:
+                        # Erstelle einen eindeutigen Handler-ID basierend auf Zeitstempel und Index
+                        handler_id = f"{idx}_{id(e)}"
+                        if handler_id in executed_handlers:
                             return  # Verhindere mehrfache Ausführung
-                        handler_called = True
+                        executed_handlers.add(handler_id)
                         
                         e.stopPropagation()  # Verhindere Event-Bubbling
                         e.preventDefault()  # Verhindere Standard-Verhalten
                         
-                        # Verwende NUR den Index aus dem data-index Attribut
-                        data_index = btn_element.getAttribute("data-index")
-                        if data_index is not None:
-                            actual_index = int(data_index)
-                            # Prüfe, ob der Index gültig ist
-                            if 0 <= actual_index < len(items_list):
-                                # Rufe remove_item nur einmal auf
-                                remove_item(actual_index)
+                        # Finde das Button-Element (kann e.target oder ein Parent sein)
+                        target = e.target
+                        while target and not target.getAttribute("data-index"):
+                            target = target.parentElement
                         
-                        # Setze den Flag nach kurzer Zeit zurück (für zukünftige Klicks)
-                        def reset_flag():
-                            nonlocal handler_called
-                            handler_called = False
-                        # Verwende setTimeout-Äquivalent
+                        # Verwende NUR den Index aus dem data-index Attribut
+                        if target:
+                            data_index = target.getAttribute("data-index")
+                            if data_index is not None:
+                                actual_index = int(data_index)
+                                # Prüfe, ob der Index gültig ist und mit dem erwarteten Index übereinstimmt
+                                if actual_index == idx and 0 <= actual_index < len(items_list):
+                                    # Rufe remove_item nur einmal auf
+                                    remove_item(actual_index)
+                        
+                        # Entferne die Handler-ID nach kurzer Zeit
+                        def cleanup():
+                            executed_handlers.discard(handler_id)
                         try:
-                            window.setTimeout(reset_flag, 100)
+                            window.setTimeout(cleanup, 200)
                         except:
                             pass
                     return handler
                 
-                p = create_proxy(create_remove_handler(remove_btn))
-                # Entferne alle alten Event-Listener
+                p = create_proxy(make_remove_handler(i))
+                # Entferne alle alten Event-Listener explizit
+                if f"remove-{i}" in old_proxies:
+                    try:
+                        old_proxy = old_proxies[f"remove-{i}"]
+                        remove_btn.removeEventListener("click", old_proxy)
+                    except:
+                        pass
                 remove_btn.onclick = None
-                # Binde NUR einen Event-Listener (nicht beide!)
+                # Binde NUR einen Event-Listener
                 remove_btn.addEventListener("click", p, False)
-                # Setze onclick NICHT, um doppelte Aufrufe zu vermeiden
                 proxies[f"remove-{i}"] = p
 
             # Bearbeiten-Button (Modal öffnen)
@@ -774,7 +785,17 @@ def add_item():
 def remove_item(index):
     """Entfernt ein Item aus der Liste"""
     global items_list
+    
+    # Verhindere mehrfache Aufrufe durch ein Lock
+    if not hasattr(remove_item, "in_progress"):
+        remove_item.in_progress = False
+    
+    if remove_item.in_progress:
+        return  # Bereits in Bearbeitung
+    
     try:
+        remove_item.in_progress = True
+        
         # Doppelte Prüfung: Stelle sicher, dass der Index gültig ist
         if 0 <= index < len(items_list):
             removed = items_list.pop(index)
@@ -793,6 +814,14 @@ def remove_item(index):
         output = document.getElementById("out")
         if output:
             output.textContent = f"Fehler beim Entfernen: {str(e)}"
+    finally:
+        # Setze das Lock nach kurzer Zeit zurück
+        def reset_lock():
+            remove_item.in_progress = False
+        try:
+            window.setTimeout(reset_lock, 100)
+        except:
+            remove_item.in_progress = False
 
 def open_edit_modal(item_index):
     """Öffnet das Edit-Modal für ein bestimmtes Item"""
@@ -894,6 +923,9 @@ def delete_item_from_modal():
         
         # Schließe das Modal
         close_edit_modal()
+        
+        # Update die Items-Liste (wichtig: muss vor update_diagram() aufgerufen werden)
+        update_items_list()
         
         # Update das Diagramm
         update_diagram()
