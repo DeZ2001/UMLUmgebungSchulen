@@ -13,6 +13,28 @@ items_list = []
 # Sichtbarkeitssymbole als Konstante
 VISIBILITY_SYMBOLS = {"public": "+", "private": "-", "protected": "#"}
 
+# Laufende IDs für Items, damit Buttons nicht auf Positionswechsel reagieren
+item_id_counter = 0
+
+def get_next_item_id():
+    """Erzeugt eine eindeutige ID für ein neues Item"""
+    global item_id_counter
+    item_id_counter += 1
+    return f"item-{item_id_counter}"
+
+def ensure_item_has_id(item):
+    """Stellt sicher, dass jedes Item eine stabile ID besitzt"""
+    if not item.get("id"):
+        item["id"] = get_next_item_id()
+    return item["id"]
+
+def find_item_index_by_id(item_id):
+    """Sucht den aktuellen Index eines Items anhand seiner ID"""
+    for idx, item in enumerate(items_list):
+        if item.get("id") == item_id:
+            return idx
+    return None
+
 def generate_diagram(className):
     """Erzeugt das Mermaid-Diagramm basierend auf dem Klassennamen und den Items"""
     global items_list
@@ -83,6 +105,7 @@ def update_items_list():
         # HTML neu aufbauen
         html = ""
         for i, item in enumerate(items_list):
+            item_id = ensure_item_has_id(item)
             item_type = item.get("type", "attribute")
             visibility = item.get("visibility", "public")
             item_name = item.get("name", "")
@@ -96,7 +119,7 @@ def update_items_list():
             )
 
             html += f"""
-                <div class="item-entry" id="item-entry-{i}">
+                <div class="item-entry" id="item-entry-{i}" data-item-id="{item_id}">
                     <span class="item-label">Element {i+1}:</span>
                     <select id="item-type-{i}">
                         <option value="attribute" {"selected" if item_type == "attribute" else ""}>Attribut</option>
@@ -109,8 +132,8 @@ def update_items_list():
                     </select>
                     <input type="text" id="item-name-{i}" value="{escaped_name}" />
                     <input type="text" id="item-datatype-{i}" value="{escaped_datatype}" placeholder="Datentyp" />
-                    <button id="remove-btn-{i}" data-index="{i}" type="button">Entfernen</button>
-                    <button id="edit-btn-{i}" data-index="{i}" type="button">Bearbeiten</button>
+                    <button id="remove-btn-{i}" data-index="{i}" data-item-id="{item_id}" type="button">Entfernen</button>
+                    <button id="edit-btn-{i}" data-index="{i}" data-item-id="{item_id}" type="button">Bearbeiten</button>
                 </div>
             """
 
@@ -125,6 +148,7 @@ def update_items_list():
         
         # Event-Listener neu binden
         for i in range(len(items_list)):
+            current_item_id = ensure_item_has_id(items_list[i])
             # Typ ändern
             type_elem = document.getElementById(f"item-type-{i}")
             if type_elem:
@@ -188,45 +212,30 @@ def update_items_list():
                         pass
                 
                 # Erstelle einen eindeutigen Handler für diesen Button
-                # Verwende den Index i direkt in der Closure
-                def make_remove_handler(idx):
-                    # Verwende ein Set, um zu verfolgen, welche Handler bereits ausgeführt wurden
-                    executed_handlers = set()
+                # Verwende eine stabile Item-ID, damit Löschvorgänge nicht von Positionswechseln abhängen
+                def make_remove_handler(item_id):
                     def handler(e):
-                        # Erstelle einen eindeutigen Handler-ID basierend auf Zeitstempel und Index
-                        handler_id = f"{idx}_{id(e)}"
-                        if handler_id in executed_handlers:
-                            return  # Verhindere mehrfache Ausführung
-                        executed_handlers.add(handler_id)
-                        
                         e.stopPropagation()  # Verhindere Event-Bubbling
                         e.preventDefault()  # Verhindere Standard-Verhalten
                         
                         # Finde das Button-Element (kann e.target oder ein Parent sein)
                         target = e.target
-                        while target and not target.getAttribute("data-index"):
+                        while target and not target.getAttribute("data-item-id"):
                             target = target.parentElement
                         
-                        # Verwende NUR den Index aus dem data-index Attribut
+                        # Verwende die Item-ID aus dem Button, fallback auf die erwartete ID
+                        actual_item_id = item_id
                         if target:
-                            data_index = target.getAttribute("data-index")
-                            if data_index is not None:
-                                actual_index = int(data_index)
-                                # Prüfe, ob der Index gültig ist und mit dem erwarteten Index übereinstimmt
-                                if actual_index == idx and 0 <= actual_index < len(items_list):
-                                    # Rufe remove_item nur einmal auf
-                                    remove_item(actual_index)
+                            data_item_id = target.getAttribute("data-item-id")
+                            if data_item_id:
+                                actual_item_id = data_item_id
                         
-                        # Entferne die Handler-ID nach kurzer Zeit
-                        def cleanup():
-                            executed_handlers.discard(handler_id)
-                        try:
-                            window.setTimeout(cleanup, 200)
-                        except:
-                            pass
+                        actual_index = find_item_index_by_id(actual_item_id)
+                        if actual_index is not None:
+                            remove_item(actual_index)
                     return handler
                 
-                p = create_proxy(make_remove_handler(i))
+                p = create_proxy(make_remove_handler(current_item_id))
                 # Entferne alle alten Event-Listener explizit
                 if f"remove-{i}" in old_proxies:
                     try:
@@ -242,11 +251,13 @@ def update_items_list():
             # Bearbeiten-Button (Modal öffnen)
             edit_btn = document.getElementById(f"edit-btn-{i}")
             if edit_btn:
-                def make_edit_handler(idx):
+                def make_edit_handler(item_id):
                     def handler(e):
-                        open_edit_modal(idx)
+                        actual_index = find_item_index_by_id(item_id)
+                        if actual_index is not None:
+                            open_edit_modal(actual_index)
                     return handler
-                p = create_proxy(make_edit_handler(i))
+                p = create_proxy(make_edit_handler(current_item_id))
                 edit_btn.addEventListener("click", p)
                 edit_btn.onclick = p
                 proxies[f"edit-{i}"] = p
@@ -757,6 +768,7 @@ def add_item():
         
         # Füge das Item zur Liste hinzu
         new_item = {
+            "id": get_next_item_id(),
             "type": item_type,
             "visibility": visibility,
             "name": name,
@@ -786,16 +798,7 @@ def remove_item(index):
     """Entfernt ein Item aus der Liste"""
     global items_list
     
-    # Verhindere mehrfache Aufrufe durch ein Lock
-    if not hasattr(remove_item, "in_progress"):
-        remove_item.in_progress = False
-    
-    if remove_item.in_progress:
-        return  # Bereits in Bearbeitung
-    
     try:
-        remove_item.in_progress = True
-        
         # Doppelte Prüfung: Stelle sicher, dass der Index gültig ist
         if 0 <= index < len(items_list):
             removed = items_list.pop(index)
@@ -814,14 +817,6 @@ def remove_item(index):
         output = document.getElementById("out")
         if output:
             output.textContent = f"Fehler beim Entfernen: {str(e)}"
-    finally:
-        # Setze das Lock nach kurzer Zeit zurück
-        def reset_lock():
-            remove_item.in_progress = False
-        try:
-            window.setTimeout(reset_lock, 100)
-        except:
-            remove_item.in_progress = False
 
 def open_edit_modal(item_index):
     """Öffnet das Edit-Modal für ein bestimmtes Item"""
