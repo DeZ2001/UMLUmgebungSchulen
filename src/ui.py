@@ -133,12 +133,12 @@ def update_items_list():
                     <input type="text" id="item-name-{i}" value="{escaped_name}" />
                     <input type="text" id="item-datatype-{i}" value="{escaped_datatype}" placeholder="Datentyp" />
                     <button id="remove-btn-{i}" data-index="{i}" data-item-id="{item_id}" type="button">Entfernen</button>
-                    <button id="edit-btn-{i}" data-index="{i}" data-item-id="{item_id}" type="button">Bearbeiten</button>
                 </div>
             """
 
         # Re-Render
         items_list_elem.innerHTML = html
+        
 
         # Proxies-Container (gegen GC)
         if not hasattr(update_items_list, "proxies"):
@@ -248,19 +248,6 @@ def update_items_list():
                 remove_btn.addEventListener("click", p, False)
                 proxies[f"remove-{i}"] = p
 
-            # Bearbeiten-Button (Modal öffnen)
-            edit_btn = document.getElementById(f"edit-btn-{i}")
-            if edit_btn:
-                def make_edit_handler(item_id):
-                    def handler(e):
-                        actual_index = find_item_index_by_id(item_id)
-                        if actual_index is not None:
-                            open_edit_modal(actual_index)
-                    return handler
-                p = create_proxy(make_edit_handler(current_item_id))
-                edit_btn.addEventListener("click", p)
-                edit_btn.onclick = p
-                proxies[f"edit-{i}"] = p
         
         # Aktualisiere die Proxies-Referenz
         update_items_list.proxies = proxies
@@ -818,120 +805,120 @@ def remove_item(index):
         if output:
             output.textContent = f"Fehler beim Entfernen: {str(e)}"
 
-def open_edit_modal(item_index):
-    """Öffnet das Edit-Modal für ein bestimmtes Item"""
-    global items_list
-    try:
-        if item_index < 0 or item_index >= len(items_list):
-            return
+# def open_edit_modal(item_index):
+#     """Öffnet das Edit-Modal für ein bestimmtes Item"""
+#     global items_list
+#     try:
+#         if item_index < 0 or item_index >= len(items_list):
+#             return
         
-        item = items_list[item_index]
+#         item = items_list[item_index]
         
-        # Setze die Werte im Modal
-        edit_type = document.getElementById("editType")
-        edit_visibility = document.getElementById("editVisibility")
-        edit_name = document.getElementById("editName")
-        edit_datatype = document.getElementById("editDatatype")
-        modal = document.getElementById("editModal")
+#         # Setze die Werte im Modal
+#         edit_type = document.getElementById("editType")
+#         edit_visibility = document.getElementById("editVisibility")
+#         edit_name = document.getElementById("editName")
+#         edit_datatype = document.getElementById("editDatatype")
+#         modal = document.getElementById("editModal")
         
-        if edit_type and edit_visibility and edit_name and edit_datatype and modal:
-            edit_type.value = item.get("type", "attribute")
-            edit_visibility.value = item.get("visibility", "public")
-            edit_name.value = item.get("name", "")
-            edit_datatype.value = item.get("datatype", "")
+#         if edit_type and edit_visibility and edit_name and edit_datatype and modal:
+#             edit_type.value = item.get("type", "attribute")
+#             edit_visibility.value = item.get("visibility", "public")
+#             edit_name.value = item.get("name", "")
+#             edit_datatype.value = item.get("datatype", "")
             
-            # Speichere den aktuellen Index im Modal
-            modal.setAttribute("data-edit-index", str(item_index))
+#             # Speichere den aktuellen Index im Modal
+#             modal.setAttribute("data-edit-index", str(item_index))
             
-            # Öffne das Modal
-            modal.classList.add("active")
-    except Exception as e:
-        output = document.getElementById("out")
-        if output:
-            output.textContent = f"Fehler beim Öffnen des Modals: {str(e)}"
+#             # Öffne das Modal
+#             modal.classList.add("active")
+#     except Exception as e:
+#         output = document.getElementById("out")
+#         if output:
+#             output.textContent = f"Fehler beim Öffnen des Modals: {str(e)}"
 
-def close_edit_modal():
-    """Schließt das Edit-Modal"""
-    modal = document.getElementById("editModal")
-    if modal:
-        modal.classList.remove("active")
+# def close_edit_modal():
+#     """Schließt das Edit-Modal"""
+#     modal = document.getElementById("editModal")
+#     if modal:
+#         modal.classList.remove("active")
 
-def save_item_from_modal():
-    """Speichert Änderungen aus dem Modal"""
-    global items_list
-    try:
-        modal = document.getElementById("editModal")
-        if not modal:
-            return
-        
-        item_index_str = modal.getAttribute("data-edit-index")
-        if not item_index_str:
-            return
-        
-        item_index = int(item_index_str)
-        if item_index < 0 or item_index >= len(items_list):
-            return
-        
-        edit_type = document.getElementById("editType")
-        edit_visibility = document.getElementById("editVisibility")
-        edit_name = document.getElementById("editName")
-        edit_datatype = document.getElementById("editDatatype")
-        
-        if edit_type and edit_visibility and edit_name and edit_datatype:
-            items_list[item_index]["type"] = edit_type.value
-            items_list[item_index]["visibility"] = edit_visibility.value
-            items_list[item_index]["name"] = edit_name.value.strip()
-            items_list[item_index]["datatype"] = edit_datatype.value.strip()
+    # def save_item_from_modal():
+    #     """Speichert Änderungen aus dem Modal"""
+    #     global items_list
+    #     try:
+    #         modal = document.getElementById("editModal")
+    #         if not modal:
+    #             return
             
-            # Schließe das Modal
-            close_edit_modal()
+    #         item_index_str = modal.getAttribute("data-edit-index")
+    #         if not item_index_str:
+    #             return
             
-            # Update das Diagramm
-            update_diagram()
+    #         item_index = int(item_index_str)
+    #         if item_index < 0 or item_index >= len(items_list):
+    #             return
             
-            output = document.getElementById("out")
-            if output:
-                output.textContent = "Änderungen gespeichert!"
-    except Exception as e:
-        output = document.getElementById("out")
-        if output:
-            output.textContent = f"Fehler beim Speichern: {str(e)}"
+    #         edit_type = document.getElementById("editType")
+    #         edit_visibility = document.getElementById("editVisibility")
+    #         edit_name = document.getElementById("editName")
+    #         edit_datatype = document.getElementById("editDatatype")
+            
+    #         if edit_type and edit_visibility and edit_name and edit_datatype:
+    #             items_list[item_index]["type"] = edit_type.value
+    #             items_list[item_index]["visibility"] = edit_visibility.value
+    #             items_list[item_index]["name"] = edit_name.value.strip()
+    #             items_list[item_index]["datatype"] = edit_datatype.value.strip()
+                
+    #             # Schließe das Modal
+    #             close_edit_modal()
+                
+    #             # Update das Diagramm
+    #             update_diagram()
+                
+    #             output = document.getElementById("out")
+    #             if output:
+    #                 output.textContent = "Änderungen gespeichert!"
+    #     except Exception as e:
+    #         output = document.getElementById("out")
+    #         if output:
+    #             output.textContent = f"Fehler beim Speichern: {str(e)}"
 
-def delete_item_from_modal():
-    """Löscht ein Item aus dem Modal"""
-    global items_list
-    try:
-        modal = document.getElementById("editModal")
-        if not modal:
-            return
-        
-        item_index_str = modal.getAttribute("data-edit-index")
-        if not item_index_str:
-            return
-        
-        item_index = int(item_index_str)
-        if item_index < 0 or item_index >= len(items_list):
-            return
-        
-        # Entferne das Item
-        removed = items_list.pop(item_index)
-        
-        # Schließe das Modal
-        close_edit_modal()
-        
-        # Update die Items-Liste (wichtig: muss vor update_diagram() aufgerufen werden)
-        update_items_list()
-        
-        # Update das Diagramm
-        update_diagram()
-        
-        output = document.getElementById("out")
-        if output:
-            output.textContent = f"{'Attribut' if removed['type'] == 'attribute' else 'Methode'} '{removed['name']}' wurde gelöscht."
-    except Exception as e:
-        output = document.getElementById("out")
-        if output:
-            output.textContent = f"Fehler beim Löschen: {str(e)}"
+    # def delete_item_from_modal():
+    #     """Löscht ein Item aus dem Modal"""
+    #     global items_list
+    #     try:
+    #         modal = document.getElementById("editModal")
+    #         if not modal:
+    #             return
+            
+    #         item_index_str = modal.getAttribute("data-edit-index")
+    #         if not item_index_str:
+    #             return
+            
+    #         item_index = int(item_index_str)
+    #         if item_index < 0 or item_index >= len(items_list):
+    #             return
+            
+    #         # Entferne das Item
+    #         removed = items_list.pop(item_index)
+            
+    #         # Schließe das Modal
+    #         close_edit_modal()
+            
+    #         # Update die Items-Liste (wichtig: muss vor update_diagram() aufgerufen werden)
+    #         update_items_list()
+            
+    #         # Update das Diagramm
+    #         update_diagram()
+            
+    #         output = document.getElementById("out")
+    #         if output:
+    #             output.textContent = f"{'Attribut' if removed['type'] == 'attribute' else 'Methode'} '{removed['name']}' wurde gelöscht."
+    #     except Exception as e:
+    #         output = document.getElementById("out")
+    #         if output:
+    #             output.textContent = f"Fehler beim Löschen: {str(e)}"
 
 def update_item_field(index, field, value):
     """Aktualisiert ein einzelnes Feld eines Items"""
