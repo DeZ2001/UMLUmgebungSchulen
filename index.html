@@ -254,6 +254,223 @@
     <!-- UML 容器：Mermaid 渲染出的 SVG 会插入到这里 -->
     <div id="uml"></div>
 
+    <script>
+      // 拖动功能实现
+      class UMLDragger {
+        constructor() {
+          this.umlElement = document.getElementById('uml');
+          this.isDragging = false;
+          this.currentX = 0;
+          this.currentY = 0;
+          this.initialX = 0;
+          this.initialY = 0;
+          this.xOffset = 0;
+          this.yOffset = 0;
+    
+          this.init();
+          }
+    
+        init() {
+          // 添加拖动把手
+          this.createDragHandle();
+            
+          // 绑定事件
+          this.umlElement.addEventListener('mousedown', (e) => this.dragStart(e));
+          document.addEventListener('mousemove', (e) => this.drag(e));
+          document.addEventListener('mouseup', () => this.dragEnd());
+            
+          // 触摸设备支持
+          this.umlElement.addEventListener('touchstart', (e) => this.dragStart(e.touches[0]));
+          document.addEventListener('touchmove', (e) => this.drag(e.touches[0]));
+          document.addEventListener('touchend', () => this.dragEnd());
+        }
+    
+        createDragHandle() {
+          // 如果已经存在拖动把手，先移除
+          const existingHandle = this.umlElement.querySelector('.uml-drag-handle');
+          if (existingHandle) {
+            existingHandle.remove();
+          }
+        
+          // 创建拖动把手
+          const dragHandle = document.createElement('div');
+          dragHandle.className = 'uml-drag-handle';
+          dragHandle.innerHTML = '⋮⋮ 拖动';
+          dragHandle.style.cssText = `
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4a90e2;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 4px 4px 0 0;
+            cursor: move;
+            user-select: none;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+            white-space: nowrap;
+          `;
+        
+          this.umlElement.style.position = 'relative';
+          this.umlElement.appendChild(dragHandle);
+        }
+    
+        dragStart(e) {
+          // 只有当点击拖动把手或SVG本身时才开始拖动
+          if (e.target.classList.contains('uml-drag-handle') || 
+            e.target.tagName === 'svg' || 
+            e.target.closest('svg')) {
+            
+            this.initialX = e.clientX - this.xOffset;
+            this.initialY = e.clientY - this.yOffset;
+            
+            if (this.umlElement.contains(e.target)) {
+              this.isDragging = true;
+              this.umlElement.style.cursor = 'grabbing';
+              
+              // 添加拖动时的视觉反馈
+              //this.umlElement.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+              this.umlElement.style.transition = 'box-shadow 0.2s ease';
+            }
+          }
+        }
+    
+        drag(e) {
+          if (this.isDragging) {
+            e.preventDefault();
+            
+            this.currentX = e.clientX - this.initialX;
+            this.currentY = e.clientY - this.initialY;
+            
+            this.xOffset = this.currentX;
+            this.yOffset = this.currentY;
+            
+            this.setTranslate(this.currentX, this.currentY);
+          }
+        }
+    
+        dragEnd() {
+          this.isDragging = false;
+          this.umlElement.style.cursor = 'move';
+        
+          // 移除拖动时的视觉反馈
+          this.umlElement.style.boxShadow = '';
+        
+          // 保存位置到本地存储
+          this.savePosition();
+        }
+    
+        setTranslate(xPos, yPos) {
+          this.umlElement.style.transform = `translate(${xPos}px, ${yPos}px)`;
+        }
+    
+        savePosition() {
+          // 保存位置到本地存储，这样刷新后位置不会丢失
+          const position = {
+            x: this.xOffset,
+            y: this.yOffset
+          };
+          localStorage.setItem('umlPosition', JSON.stringify(position));
+        }
+    
+        loadPosition() {
+          // 从本地存储加载位置
+          const saved = localStorage.getItem('umlPosition');
+          if (saved) {
+            const position = JSON.parse(saved);
+            this.xOffset = position.x;
+            this.yOffset = position.y;
+            this.setTranslate(this.xOffset, this.yOffset);
+          }
+        }
+    
+        resetPosition() {
+          // 重置位置
+          this.xOffset = 0;
+          this.yOffset = 0;
+          this.setTranslate(0, 0);
+          localStorage.removeItem('umlPosition');
+        }
+      }
+
+      // 初始化拖动功能
+      let umlDragger;
+
+      // 等待页面加载完成
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+          umlDragger = new UMLDragger();
+          umlDragger.loadPosition();
+        
+          // 添加重置位置按钮
+          addResetButton();
+        }, 1000); // 等待Mermaid渲染完成
+      });
+
+      function addResetButton() {
+        // 创建重置位置按钮
+        const resetBtn = document.createElement('button');
+        resetBtn.textContent = '↺ Position zurücksetzen';
+        resetBtn.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          padding: 8px 16px;
+          background: #6c757d;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          z-index: 1000;
+        `;
+        resetBtn.onclick = () => {
+          if (umlDragger) {
+            umlDragger.resetPosition();
+          }
+        };
+      
+        document.body.appendChild(resetBtn);
+      }
+    </script>
+
+    <!-- Edit-Modal -->
+    <!-- <div id="editModal" class="edit-modal">
+      <div class="edit-modal-content">
+        <h3>Element bearbeiten</h3>
+        <div class="form-group">
+          <label for="editType">Typ:</label>
+          <select id="editType">
+            <option value="attribute">Attribut</option>
+            <option value="method">Methode</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editVisibility">Sichtbarkeit:</label>
+          <select id="editVisibility">
+            <option value="public">Public (+)</option>
+            <option value="private">Private (-)</option>
+            <option value="protected">Protected (#)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="editName">Name:</label>
+          <input type="text" id="editName" />
+        </div>
+        <div class="form-group">
+          <label for="editDatatype">Datentyp:</label>
+          <input type="text" id="editDatatype" placeholder="z.B. string, int" />
+        </div>
+        <div class="edit-modal-buttons">
+          <button id="deleteBtn" class="btn-delete">Löschen</button>
+          <button id="cancelBtn" class="btn-cancel">Abbrechen</button>
+          <button id="saveBtn" class="btn-save">Speichern</button>
+        </div>
+      </div>
+    </div> -->
+
     <!-- 🔹 PyScript-Konfiguration -->
     <py-config type="json">
       {
