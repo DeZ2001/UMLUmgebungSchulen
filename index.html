@@ -228,18 +228,41 @@
       .input-group button:active {
         background-color: #2a5f8f;
       }
-      .add-item-group {
+      .panel {
         margin: 1.5rem 0;
         padding: 1rem;
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,.1);
-        max-width: 800px;
+        max-width: 1000px;
         width: 90%;
       }
-      .add-item-group h3 {
+      .panel h3 {
         margin: 0 0 1rem 0;
         font-size: 1.1rem;
+      }
+      .add-item-group,
+      .manage-item-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .item-selection {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+      .item-selection label {
+        font-weight: 500;
+      }
+      .item-selection select {
+        padding: 0.4rem 0.75rem;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        min-width: 220px;
       }
       .add-item-controls {
         display: flex;
@@ -262,7 +285,8 @@
         border-radius: 6px;
         font-size: 1rem;
       }
-      .add-item-controls button {
+      .add-item-controls button,
+      .manage-controls button {
         padding: 0.5rem 1rem;
         background-color: #28a745;
         color: white;
@@ -271,66 +295,24 @@
         font-size: 1rem;
         cursor: pointer;
       }
-      .add-item-controls button:hover {
+      .add-item-controls button:hover,
+      .manage-controls button:hover {
         background-color: #218838;
+      }
+      .manage-controls button {
+        background-color: #4a90e2;
+      }
+      .manage-controls button.btn-delete {
+        background-color: #dc3545;
+      }
+      .manage-controls button.btn-delete:hover {
+        background-color: #c82333;
       }
       .item-type-select {
         padding: 0.5rem;
         border: 2px solid #ddd;
         border-radius: 6px;
         font-size: 1rem;
-      }
-      .items-list {
-        margin-top: 1rem;
-      }
-      .item-entry {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-        padding: 0.75rem;
-        margin: 0.5rem 0;
-        background: #f8f9fa;
-        border-radius: 6px;
-        border: 1px solid #e0e0e0;
-      }
-      .item-entry select {
-        padding: 0.4rem 0.5rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        background: white;
-      }
-      .item-entry input {
-        flex: 1;
-        padding: 0.4rem 0.75rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        min-width: 120px;
-      }
-      .item-entry input:focus,
-      .item-entry select:focus {
-        outline: none;
-        border-color: #4a90e2;
-      }
-      .item-entry .item-label {
-        min-width: 80px;
-        font-size: 0.85rem;
-        color: #666;
-        font-weight: 500;
-      }
-      .item-entry button {
-        padding: 0.4rem 0.75rem;
-        background-color: #dc3545;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.85rem;
-        white-space: nowrap;
-      }
-      .item-entry button:hover {
-        background-color: #c82333;
       }
       /* SVG-Interaktivität */
       #uml svg text {
@@ -339,89 +321,6 @@
       }
       #uml svg text:hover {
         fill: #4a90e2;
-      }
-      /* Modal für Editierung */
-      .edit-modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-      }
-      .edit-modal.active {
-        display: flex;
-      }
-      .edit-modal-content {
-        background: white;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        max-width: 500px;
-        width: 90%;
-      }
-      .edit-modal-content h3 {
-        margin: 0 0 1.5rem 0;
-      }
-      .edit-modal-content .form-group {
-        margin-bottom: 1rem;
-      }
-      .edit-modal-content label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-      }
-      .edit-modal-content select,
-      .edit-modal-content input {
-        width: 100%;
-        padding: 0.5rem;
-        border: 2px solid #ddd;
-        border-radius: 6px;
-        font-size: 1rem;
-        box-sizing: border-box;
-      }
-      .edit-modal-content select:focus,
-      .edit-modal-content input:focus {
-        outline: none;
-        border-color: #4a90e2;
-      }
-      .edit-modal-buttons {
-        display: flex;
-        gap: 1rem;
-        justify-content: flex-end;
-        margin-top: 1.5rem;
-      }
-      .edit-modal-buttons button {
-        padding: 0.5rem 1.5rem;
-        border: none;
-        border-radius: 6px;
-        font-size: 1rem;
-        cursor: pointer;
-      }
-      .edit-modal-buttons .btn-save {
-        background-color: #28a745;
-        color: white;
-      }
-      .edit-modal-buttons .btn-save:hover {
-        background-color: #218838;
-      }
-      .edit-modal-buttons .btn-cancel {
-        background-color: #6c757d;
-        color: white;
-      }
-      .edit-modal-buttons .btn-cancel:hover {
-        background-color: #5a6268;
-      }
-      .edit-modal-buttons .btn-delete {
-        background-color: #dc3545;
-        color: white;
-      }
-      .edit-modal-buttons .btn-delete:hover {
-        background-color: #c82333;
       }
     </style>
   </head>
@@ -438,24 +337,45 @@
     </div>
 
     <!-- Hinzufügen von Attributen/Methoden -->
-    <div class="add-item-group">
-      <h3>Attribute/Methoden hinzufügen</h3>
+    <div class="panel add-item-group">
+      <h3>Neues Element hinzufügen</h3>
       <div class="add-item-controls">
-        <select id="itemType" class="item-type-select">
+        <select id="newItemType" class="item-type-select">
           <option value="attribute">Attribut</option>
           <option value="method">Methode</option>
         </select>
-        <select id="visibility" class="item-type-select">
+        <select id="newVisibility" class="item-type-select">
           <option value="public">Public (+)</option>
           <option value="private">Private (-)</option>
           <option value="protected">Protected (#)</option>
         </select>
-        <input type="text" id="itemName" placeholder="z.B. name, getName()..." />
-        <input type="text" id="itemDatatype" placeholder="Datentyp, z.B. string" />
+        <input type="text" id="newItemName" placeholder="z.B. name, getName()..." />
+        <input type="text" id="newItemDatatype" placeholder="Datentyp, z.B. string" />
         <button id="addItemBtn" type="button" py-onClick="add_item()">Hinzufügen</button>
       </div>
-      <div class="items-list">
-        <div id="itemsList"></div>
+    </div>
+
+    <div class="panel manage-item-group">
+      <h3>Bestehende Elemente verwalten</h3>
+      <div class="item-selection">
+        <label for="itemSelector">Element auswählen:</label>
+        <select id="itemSelector">
+          <option value="">Bitte Element wählen</option>
+        </select>
+      </div>
+      <div class="add-item-controls manage-controls">
+        <select id="manageItemType" class="item-type-select" disabled>
+          <option value="attribute">Attribut</option>
+          <option value="method">Methode</option>
+        </select>
+        <select id="manageVisibility" class="item-type-select" disabled>
+          <option value="public">Public (+)</option>
+          <option value="private">Private (-)</option>
+          <option value="protected">Protected (#)</option>
+        </select>
+        <input type="text" id="manageItemName" placeholder="Name" disabled />
+        <input type="text" id="manageItemDatatype" placeholder="Datentyp" disabled />
+        <button id="deleteItemBtn" type="button" class="btn-delete" disabled>Löschen</button>
       </div>
     </div>
 
