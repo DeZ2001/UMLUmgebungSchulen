@@ -27,6 +27,17 @@
         margin: 0;
         padding: 2rem;
       }
+
+      /*主容器 -使用Grid 布局创建两个窗口*/
+      .main-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 100px;
+        width: 100%;
+        max-width: 1400px;
+        margin-top: 2rem;
+      }
+      
     
       /* 矢量图像格式 */
       #uml svg {
@@ -40,7 +51,7 @@
         cursor: grabbing;
       }
       /* 拖动相关样式 */
-      .uml-drag-handle {
+      .drag-handle {
         position: absolute;
         top: -30px;
         left: 50%;
@@ -58,18 +69,18 @@
         transition: background-color 0.2s ease;
       }
 
-      .uml-drag-handle:hover {
+      .drag-handle:hover {
         background: #357abd;
       }
 
-      .uml-drag-handle:active {
+      .drag-handle:active {
           background: #2a5f8f;
       }
 
       #uml {
         margin-top: 4rem;
-        width: 90%;
-        max-width: 1000px;
+        width: 100%;
+        max-width: 500px;
         position: relative;
         cursor: move;
         transition: transform 0.1s ease, box-shadow 0.2s ease;
@@ -88,6 +99,72 @@
           pointer-events: auto; /* 但允许文本编辑等交互 */
       }
 
+      .python-code {
+        background: #d0f6d2;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        
+        width: auto;
+        max-width: 80vw; /* 最大为视口宽度的80% */
+        min-width: 300px; /* 最小宽度 */
+        
+        padding: 1rem;
+        font-family: 'Courier New', Courier, monospace;
+        box-shadow: 0 0 4px rgba(0,0,0,.08);
+        margin-bottom: 1rem;
+        box-sizing: border-box;
+        white-space: pre-wrap;
+        user-select: none;
+        z-index: 100;
+
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      
+      .python-code .keyword {
+        color: #0000ff;
+        font-weight: bold;
+      }
+      .python-code .string {
+        color: #a31515;
+      }
+      .python-code .comment {
+        color: #008000;
+        font-style: italic;
+      } 
+      .python-code .function {
+        color: #795e26;
+      }
+      .python-code .class-name {
+        color: #267f99;
+        font-weight: bold;
+      }
+      .python-code .number {
+        color: #098658;
+      }
+
+      .code-with-line-numbers{display: flex;}
+      
+      .line-numbers {
+        background: #d0f6d2;
+        color: #858585;
+        padding: 5px 5px 0px 5px;
+        text-align: right;
+        user-select: none;
+      }
+
+      .code-content {
+        flex: 1;
+        /*top,right,bottom,left*/
+        padding: 5px 5px 0px 5px;
+      }
+
+      /* 确保代码保持正确的格式 */
+      .code-content br {
+          display: none;
+      }
+        
 
       .edit-button-overlay {
         position: absolute !important;
@@ -385,8 +462,34 @@
     <!-- Status-Ausgabe -->
     <pre id="out">Lade UML-Diagramm...</pre>
 
-    <!-- UML 容器：Mermaid 渲染出的 SVG 会插入到这里 -->
-    <div id="uml"></div>
+
+    <div class="main-container">
+
+      <!-- UML 窗口 -->
+      <div id="uml" style="left:80px"></div>
+      
+    <!-- Python 代码窗口 -->
+      <div class="python-code">
+        <div class="code-with-line-numbers">
+          <div class="line-numbers"></div>
+          <div class="code-content"><span class="keyword">class</span> <span class="class">Person</span>:<br>
+    <span class="keyword">def</span> <span class="function">__init__</span>(<span class="function">self</span>, name, age):<br>
+        <span class="function">self</span>.name = name<br>
+        <span class="function">self</span>.age = age<br>
+    <br>
+    <span class="keyword">def</span> <span class="function">get_name</span>(<span class="function">self</span>):<br>
+        <span class="keyword">return</span> <span class="function">self</span>.name<br>
+    <br>
+    <span class="keyword">def</span> <span class="function">set_age</span>(<span class="function">self</span>, age):<br>
+        <span class="function">self</span>.age = age<br>
+    <br>
+    <span class="keyword">def</span> <span class="function">__str__</span>(<span class="function">self</span>):<br>
+        <span class="keyword">return</span> <span class="string">f"Person(name={self.name}, age={self.age})"</span><br>
+          </div>
+        </div>
+      </div>
+
+    </div>
 
     <script>
       // 拖动功能实现
@@ -417,19 +520,21 @@
           this.umlElement.addEventListener('touchstart', (e) => this.dragStart(e.touches[0]));
           document.addEventListener('touchmove', (e) => this.drag(e.touches[0]));
           document.addEventListener('touchend', () => this.dragEnd());
+
+          this.loadPosition();
         }
     
         createDragHandle() {
           // 如果已经存在拖动把手，先移除
-          const existingHandle = this.umlElement.querySelector('.uml-drag-handle');
+          const existingHandle = this.umlElement.querySelector('.drag-handle');
           if (existingHandle) {
             existingHandle.remove();
           }
         
           // 创建拖动把手
           const dragHandle = document.createElement('div');
-          dragHandle.className = 'uml-drag-handle';
-          dragHandle.innerHTML = '⋮⋮ 拖动';
+          dragHandle.className = 'drag-handle';
+          dragHandle.innerHTML = '拖动';
           dragHandle.style.cssText = `
             position: absolute;
             top: -30px;
@@ -453,7 +558,7 @@
     
         dragStart(e) {
           // 只有当点击拖动把手或SVG本身时才开始拖动
-          if (e.target.classList.contains('uml-drag-handle') || 
+          if (e.target.classList.contains('drag-handle') || 
             e.target.tagName === 'svg' || 
             e.target.closest('svg')) {
             
@@ -465,7 +570,7 @@
               this.umlElement.style.cursor = 'grabbing';
               
               // 添加拖动时的视觉反馈
-              //this.umlElement.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+              this.umlElement.style.boxShadow = '0 0 0 rgba(0,0,0,0.3)';
               this.umlElement.style.transition = 'box-shadow 0.2s ease';
             }
           }
@@ -511,7 +616,7 @@
     
         loadPosition() {
           // 从本地存储加载位置
-          const saved = localStorage.getItem('umlPosition');
+          const saved = localStorage.getItem('umlWindowPosition');
           if (saved) {
             const position = JSON.parse(saved);
             this.xOffset = position.x;
@@ -529,24 +634,168 @@
         }
       }
 
+      /*
+      class CodeDragger {
+        constructor() {
+          this.codeElement = document.getElementById('python-code');
+          this.isDragging = false;
+          this.currentX = 0;
+          this.currentY = 0;
+          this.initialX = 0;
+          this.initialY = 0;
+          this.xOffset = 0;
+          this.yOffset = 0;
+    
+          this.init();
+          }
+    
+        init() {
+          // 添加拖动把手
+          this.createDragHandle();
+            
+          // 绑定事件
+          this.codeElement.addEventListener('mousedown', (e) => this.dragStart(e));
+          document.addEventListener('mousemove', (e) => this.drag(e));
+          document.addEventListener('mouseup', () => this.dragEnd());
+            
+          // 触摸设备支持
+          this.codeElement.addEventListener('touchstart', (e) => this.dragStart(e.touches[0]));
+          document.addEventListener('touchmove', (e) => this.drag(e.touches[0]));
+          document.addEventListener('touchend', () => this.dragEnd());
+        }
+    
+        createDragHandle() {
+          // 如果已经存在拖动把手，先移除
+          const existingHandle = this.codeElement.querySelector('.drag-handle');
+          if (existingHandle) {
+            existingHandle.remove();
+          }
+        
+          // 创建拖动把手
+          const dragHandle = document.createElement('div');
+          dragHandle.className = 'drag-handle';
+          dragHandle.innerHTML = '拖动';
+          dragHandle.style.cssText = `
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4a90e2;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 4px 4px 0 0;
+            cursor: move;
+            user-select: none;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 10;
+            white-space: nowrap;
+          `;
+        
+          this.codeElement.style.position = 'fixed';
+          this.codeElement.appendChild(this.dragHandle);
+        }
+    
+        dragStart(e) {
+          // 只有当点击拖动把手时才开始拖动
+          
+            this.initialX = e.clientX - this.xOffset;
+            this.initialY = e.clientY - this.yOffset;
+            
+            if (this.codeElement.contains(e.target)) {
+              this.isDragging = true;
+              this.codeElement.style.cursor = 'grabbing';
+              
+              // 添加拖动时的视觉反馈
+              this.umlElement.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+              this.codeElement.style.transition = 'box-shadow 0.2s ease';
+            }
+        }
+    
+        drag(e) {
+          if (this.isDragging) {
+            e.preventDefault();
+            
+            this.currentX = e.clientX - this.initialX;
+            this.currentY = e.clientY - this.initialY;
+            
+            this.xOffset = this.currentX;
+            this.yOffset = this.currentY;
+            
+            this.setTranslate(this.currentX, this.currentY);
+          }
+        }
+    
+        dragEnd() {
+          this.isDragging = false;
+          this.codeElement.style.cursor = 'move';
+        
+          // 移除拖动时的视觉反馈
+          this.codeElement.style.boxShadow = '';
+        
+          // 保存位置到本地存储
+          this.savePosition();
+        }
+    
+        setTranslate(xPos, yPos) {
+          this.codeElement.style.transform = `translate(${xPos}px, ${yPos}px)`;
+        }
+    
+        savePosition() {
+          // 保存位置到本地存储，这样刷新后位置不会丢失
+          const position = {
+            x: this.xOffset,
+            y: this.yOffset
+          };
+          localStorage.setItem('codePosition', JSON.stringify(position));
+        }
+    
+        loadPosition() {
+          // 从本地存储加载位置
+          const saved = localStorage.getItem('codePosition');
+          if (saved) {
+            const position = JSON.parse(saved);
+            this.xOffset = position.x;
+            this.yOffset = position.y;
+            this.setTranslate(this.xOffset, this.yOffset);
+          }
+        }
+    
+        resetPosition() {
+          // 重置位置
+          this.xOffset = 0;
+          this.yOffset = 0;
+          this.setTranslate(0, 0);
+          localStorage.removeItem('codePosition');
+        }
+      }
+        */
+
       // 初始化拖动功能
       let umlDragger;
+      //let codeDragger;
 
       // 等待页面加载完成
       document.addEventListener('DOMContentLoaded', function() {
+        /*
+        // 代码拖动功能
+        setTimeout(() => {
+          codeDragger = new CodeDragger();
+        }, 1000);
+        */
+
+        // UML 拖动功能
         setTimeout(() => {
           umlDragger = new UMLDragger();
           umlDragger.loadPosition();
+        }, 1000);
         
-          // 添加重置位置按钮
-          addResetButton();
-        }, 1000); // 等待Mermaid渲染完成
       });
 
       function addResetButton() {
         // 创建重置位置按钮
         const resetBtn = document.createElement('button');
-        resetBtn.textContent = '↺ Position zurücksetzen';
+        resetBtn.textContent = 'UML-Position zurücksetzen';
         resetBtn.style.cssText = `
           position: fixed;
           bottom: 20px;
@@ -559,7 +808,9 @@
           cursor: pointer;
           font-size: 12px;
           z-index: 1000;
+          cursor: pointer;
         `;
+    
         resetBtn.onclick = () => {
           if (umlDragger) {
             umlDragger.resetPosition();
@@ -568,6 +819,147 @@
       
         document.body.appendChild(resetBtn);
       }
+      
+      /*
+      function addResetButtonVonCode() {
+        // 创建重置位置按钮
+        const resetBtn = document.createElement('button');
+        resetBtn.textContent = 'Python-Code Position zurücksetzen';
+        resetBtn.style.cssText = `
+          position: fixed;
+          bottom: 60px;
+          right: 20px;
+          padding: 8px 16px;
+          background: #6c757d;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          z-index: 1000;
+          `;
+    
+        resetBtn.onclick = () => {
+          if (codeDragger) {
+            codeDragger.resetPosition();
+          }
+        };
+
+        document.body.appendChild(resetBtn);
+      }
+      */
+      
+      // 添加重置位置按钮
+      document.addEventListener('DOMContentLoaded', addResetButton);
+      //document.addEventListener('DOMContentLoaded', addResetButtonVonCode);
+
+      class LineNumberManager {
+        constructor(codeElement, lineNumbersElement) {
+          this.codeElement = codeElement;
+          this.lineNumbersElement = lineNumbersElement;
+          this.init();
+        }
+    
+        init() {
+            this.updateLineNumbers();
+            
+            // 监听代码变化
+            this.codeElement.addEventListener('input', () => {
+                this.updateLineNumbers();
+            });
+            
+            // 监听粘贴事件
+            this.codeElement.addEventListener('paste', () => {
+                setTimeout(() => {
+                    this.updateLineNumbers();
+                }, 10);
+            });
+            
+        }
+    
+        updateLineNumbers() {
+            const code = this.codeElement.value || this.codeElement.textContent;
+            const lines = code.split('\n').length;
+
+            // 生成行号HTML
+            let lineNumbersHTML = '';
+            for (let i = 0; i < lines; i++) {
+                lineNumbersHTML += `${i}<br>`;
+            }
+            
+            this.lineNumbersElement.innerHTML = lineNumbersHTML;
+            
+             // 同步高度
+            // this.lineNumbersElement.style.height = this.codeElement.scrollHeight + 'px'; 
+
+            this.syncScroll();
+        }
+        syncScroll() {
+            this.codeElement.addEventListener('scroll', () => {
+                this.lineNumbersElement.scrollTop = this.codeElement.scrollTop;
+            });
+        }
+        
+        insertText(text) {
+          const selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            const textNode = document.createTextNode(text);
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.setEndAfter(textNode);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+        getCode() {
+          return this.editor.textContent;
+        }
+    
+        setCode(code) {
+            this.editor.textContent = code;
+            this.updateLineNumbers();
+            this.applySyntaxHighlighting();
+        }
+    
+        // 添加正确缩进的新行
+        addLine() {
+            const currentCode = this.getCode();
+            const lines = currentCode.split('\n');
+            const lastLine = lines[lines.length - 1] || '';
+            
+            // 计算缩进（最后一个非空行的缩进）
+            const indentMatch = lastLine.match(/^(\s*)/);
+            const indent = indentMatch ? indentMatch[1] : '';
+            
+            this.setCode(currentCode + '\n' + indent);
+        }
+    
+        clear() {
+          this.setCode('');
+        }
+      }   
+      // 初始化正确的Python代码
+      const correctPythonCode = `class Person:
+          def __init__(self, name, age):
+              self.name = name
+              self.age = age
+
+          def get_name(self):
+              return self.name
+
+          def set_age(self, age):
+              self.age = age
+
+          def __str__(self):
+              return f"Person(name={self.name}, age={self.age})"`;
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const pythoneditor = new LineNumberManager(document.querySelector('.code-content'), document.querySelector('.line-numbers'));
+          
+        pythoneditor.setCode(correctPythonCode);
+      });
     </script>
 
     <!-- Edit-Modal -->
@@ -621,5 +1013,6 @@
 
     <!-- 🔹 Lade die UI-Logik（Python 里调用 Mermaid 渲染） -->
     <py-script src="src/ui.py"></py-script>
+
   </body>
 </html>
