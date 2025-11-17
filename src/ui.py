@@ -2,38 +2,20 @@ from typing import Any
 from js import window, document
 from pyodide.ffi import create_proxy
 import asyncio
+import html
 
 # Zähler für eindeutige Diagramm-IDs
 diagram_counter = 0
 
 # Liste der Attribute und Methoden
 # Liste von Dictionaries: {"type": "attribute"/"method", "visibility": "public"/"private"/"protected", "name": "name"}
-items_list = []  
+items_list = []
+
+# Aktuell ausgewähltes Element in der Eingabemaske
+selected_item_index = None
 
 # Sichtbarkeitssymbole als Konstante
 VISIBILITY_SYMBOLS = {"public": "+", "private": "-", "protected": "#"}
-
-# Laufende IDs für Items, damit Buttons nicht auf Positionswechsel reagieren
-item_id_counter = 0
-
-def get_next_item_id():
-    """Erzeugt eine eindeutige ID für ein neues Item"""
-    global item_id_counter
-    item_id_counter += 1
-    return f"item-{item_id_counter}"
-
-def ensure_item_has_id(item):
-    """Stellt sicher, dass jedes Item eine stabile ID besitzt"""
-    if not item.get("id"):
-        item["id"] = get_next_item_id()
-    return item["id"]
-
-def find_item_index_by_id(item_id):
-    """Sucht den aktuellen Index eines Items anhand seiner ID"""
-    for idx, item in enumerate(items_list):
-        if item.get("id") == item_id:
-            return idx
-    return None
 
 def generate_diagram(className):
     """Erzeugt das Mermaid-Diagramm basierend auf dem Klassennamen und den Items"""
@@ -85,191 +67,186 @@ def generate_diagram(className):
     
     return "\n".join(diagram_lines)
 
-def update_items_list():
-    """Aktualisiert die Anzeige der Items-Liste mit editierbaren Feldern"""
-    global items_list
+def format_item_label(item, index):
+    """Erzeugt die Beschriftung für das Auswahlfeld"""
+    item_type = item.get("type", "attribute")
+    type_label = "Attribut" if item_type == "attribute" else "Methode"
+    visibility = item.get("visibility", "public")
+    visibility_symbol = VISIBILITY_SYMBOLS.get(visibility, "+")
+    name = item.get("name", "").strip() or "(ohne Namen)"
+    datatype = item.get("datatype", "").strip()
 
-    try:
-        items_list_elem = document.getElementById("itemsList")
-        if not items_list_elem:
-            return
+    if item_type == "method":
+        signature = f"{name}()"
+    else:
+        signature = name
 
-        # Wenn leer: Hinweis zeigen und fertig
-        if not items_list:
-            items_list_elem.innerHTML = (
-                "<p style='color: #666; font-style: italic; padding: 1rem;'>"
-                "Keine Attribute/Methoden hinzugefügt.</p>"
-            )
-            return
+    if datatype:
+        signature += f": {datatype}"
 
-        # HTML neu aufbauen
-        html = ""
-        for i, item in enumerate(items_list):
-            item_id = ensure_item_has_id(item)
-            item_type = item.get("type", "attribute")
-            visibility = item.get("visibility", "public")
-            item_name = item.get("name", "")
-            datatype = item.get("datatype", "")
+    label = f"{index + 1}. {type_label} {visibility_symbol}{signature}"
+    return html.escape(label)
 
-            escaped_name = (
-                item_name.replace('"', '&quot;').replace("'", "&#39;")
-            )
-            escaped_datatype = (
-                datatype.replace('"', '&quot;').replace("'", "&#39;")
-            )
+def set_manage_fields_enabled(enabled):
+    """Aktiviert oder deaktiviert die Bearbeitungsfelder"""
+    field_ids = ["manageItemType", "manageVisibility", "manageItemName", "manageItemDatatype", "deleteItemBtn"]
+    for field_id in field_ids:
+        elem = document.getElementById(field_id)
+        if elem:
+            elem.disabled = not enabled
 
-            html += f"""
-                <div class="item-entry" id="item-entry-{i}" data-item-id="{item_id}">
-                    <span class="item-label">Element {i+1}:</span>
-                    <select id="item-type-{i}">
-                        <option value="attribute" {"selected" if item_type == "attribute" else ""}>Attribut</option>
-                        <option value="method" {"selected" if item_type == "method" else ""}>Methode</option>
-                    </select>
-                    <select id="item-visibility-{i}">
-                        <option value="public" {"selected" if visibility == "public" else ""}>Public (+)</option>
-                        <option value="private" {"selected" if visibility == "private" else ""}>Private (-)</option>
-                        <option value="protected" {"selected" if visibility == "protected" else ""}>Protected (#)</option>
-                    </select>
-                    <input type="text" id="item-name-{i}" value="{escaped_name}" />
-                    <input type="text" id="item-datatype-{i}" value="{escaped_datatype}" placeholder="Datentyp" />
-                    <button id="remove-btn-{i}" data-index="{i}" data-item-id="{item_id}" type="button">Entfernen</button>
-                </div>
-            """
+def reset_item_form():
+    """Leert das Eingabefeld und hebt die Auswahl auf"""
+    global selected_item_index
+    selected_item_index = None
 
-        # Re-Render
-        items_list_elem.innerHTML = html
-        
+    type_elem = document.getElementById("manageItemType")
+    visibility_elem = document.getElementById("manageVisibility")
+    name_elem = document.getElementById("manageItemName")
+    datatype_elem = document.getElementById("manageItemDatatype")
+    selector = document.getElementById("itemSelector")
 
-        # Proxies-Container (gegen GC)
-        if not hasattr(update_items_list, "proxies"):
-            update_items_list.proxies = {}
-        old_proxies = update_items_list.proxies.copy()  # Kopie der alten Proxies
-        proxies = {}
-        
-        # Event-Listener neu binden
-        for i in range(len(items_list)):
-            current_item_id = ensure_item_has_id(items_list[i])
-            # Typ ändern
-            type_elem = document.getElementById(f"item-type-{i}")
-            if type_elem:
-                def make_type_handler(idx):
-                    def handler(e):
-                        update_item_field(idx, "type", e.target.value)
-                    return handler
-                p = create_proxy(make_type_handler(i))
-                type_elem.addEventListener("change", p)
-                type_elem.onchange = p
-                proxies[f"type-{i}"] = p
+    if type_elem:
+        type_elem.value = "attribute"
+    if visibility_elem:
+        visibility_elem.value = "public"
+    if name_elem:
+        name_elem.value = ""
+    if datatype_elem:
+        datatype_elem.value = ""
+    if selector:
+        selector.value = ""
 
-            # Sichtbarkeit ändern
-            visibility_elem = document.getElementById(f"item-visibility-{i}")
-            if visibility_elem:
-                def make_visibility_handler(idx):
-                    def handler(e):
-                        update_item_field(idx, "visibility", e.target.value)
-                    return handler
-                p = create_proxy(make_visibility_handler(i))
-                visibility_elem.addEventListener("change", p)
-                visibility_elem.onchange = p
-                proxies[f"visibility-{i}"] = p
+    set_manage_fields_enabled(False)
 
-            # Name ändern
-            name_elem = document.getElementById(f"item-name-{i}")
-            if name_elem:
-                def make_name_handler(idx):
-                    def handler(e):
-                        update_item_field(idx, "name", e.target.value)
-                    return handler
-                p = create_proxy(make_name_handler(i))
-                name_elem.addEventListener("input", p)
-                name_elem.addEventListener("change", p)
-                proxies[f"name-{i}"] = p
-            
-            #Entfernen-Button need check ???
-            datatype_elem = document.getElementById(f"item-datatype-{i}")
-            if datatype_elem:
-                def make_datatype_handler(idx):
-                    def handler(e):
-                        update_item_field(idx, "datatype", e.target.value)
-                    return handler
-                p = create_proxy(make_datatype_handler(i))
-                datatype_elem.addEventListener("input", p)
-                datatype_elem.addEventListener("change", p)
-                proxies[f"datatype-{i}"] = p
-            
-            
-            # Entfernen-Button
-            remove_btn = document.getElementById(f"remove-btn-{i}")
-            if remove_btn:
-                # Entferne alte Event-Listener, falls vorhanden
-                old_proxy_key = f"remove-{i}"
-                if old_proxy_key in old_proxies:
-                    try:
-                        old_proxy = old_proxies[old_proxy_key]
-                        remove_btn.removeEventListener("click", old_proxy)
-                        remove_btn.onclick = None
-                    except:
-                        pass
-                
-                # Erstelle einen eindeutigen Handler für diesen Button
-                # Verwende eine stabile Item-ID, damit Löschvorgänge nicht von Positionswechseln abhängen
-                def make_remove_handler(item_id):
-                    def handler(e):
-                        e.stopPropagation()  # Verhindere Event-Bubbling
-                        e.preventDefault()  # Verhindere Standard-Verhalten
-                        
-                        # Finde das Button-Element (kann e.target oder ein Parent sein)
-                        target = e.target
-                        while target and not target.getAttribute("data-item-id"):
-                            target = target.parentElement
-                        
-                        # Verwende die Item-ID aus dem Button, fallback auf die erwartete ID
-                        actual_item_id = item_id
-                        if target:
-                            data_item_id = target.getAttribute("data-item-id")
-                            if data_item_id:
-                                actual_item_id = data_item_id
-                        
-                        actual_index = find_item_index_by_id(actual_item_id)
-                        if actual_index is not None:
-                            remove_item(actual_index)
-                    return handler
-                
-                p = create_proxy(make_remove_handler(current_item_id))
-                # Entferne alle alten Event-Listener explizit
-                if f"remove-{i}" in old_proxies:
-                    try:
-                        old_proxy = old_proxies[f"remove-{i}"]
-                        remove_btn.removeEventListener("click", old_proxy)
-                    except:
-                        pass
-                remove_btn.onclick = None
-                # Binde NUR einen Event-Listener
-                remove_btn.addEventListener("click", p, False)
-                proxies[f"remove-{i}"] = p
+def load_item_into_form(index):
+    """Lädt das Item mit dem gegebenen Index in das Formular"""
+    global selected_item_index
 
-        
-        # Aktualisiere die Proxies-Referenz
-        update_items_list.proxies = proxies
+    if index < 0 or index >= len(items_list):
+        reset_item_form()
+        return
 
-    except Exception as e:
+    selected_item_index = index
+    item = items_list[index]
+
+    type_elem = document.getElementById("manageItemType")
+    visibility_elem = document.getElementById("manageVisibility")
+    name_elem = document.getElementById("manageItemName")
+    datatype_elem = document.getElementById("manageItemDatatype")
+    selector = document.getElementById("itemSelector")
+
+    if type_elem:
+        type_elem.value = item.get("type", "attribute")
+    if visibility_elem:
+        visibility_elem.value = item.get("visibility", "public")
+    if name_elem:
+        name_elem.value = item.get("name", "")
+    if datatype_elem:
+        datatype_elem.value = item.get("datatype", "")
+    if selector:
+        selector.value = str(index)
+
+    set_manage_fields_enabled(True)
+
+def update_item_selector():
+    """Aktualisiert die Optionsliste für bestehende Elemente"""
+    global selected_item_index
+
+    selector = document.getElementById("itemSelector")
+    if not selector:
+        return
+
+    if selected_item_index is not None and not (0 <= selected_item_index < len(items_list)):
+        selected_item_index = None
+
+    options = ["<option value=\"\">Bitte Element wählen</option>"]
+    for idx, item in enumerate(items_list):
+        selected_attr = " selected" if selected_item_index == idx else ""
+        options.append(
+            f"<option value=\"{idx}\"{selected_attr}>{format_item_label(item, idx)}</option>"
+        )
+
+    selector.innerHTML = "".join(options)
+
+    if selected_item_index is None:
+        selector.value = ""
+    else:
+        selector.value = str(selected_item_index)
+
+def on_item_selector_change(event):
+    """Reagiert auf Änderungen im Auswahlfeld"""
+    value = event.target.value
+    if value == "":
+        reset_item_form()
+    else:
+        try:
+            load_item_into_form(int(value))
+        except Exception:
+            reset_item_form()
+
+def update_selected_item_field(field, value):
+    """Aktualisiert ein Feld des ausgewählten Elements"""
+    global selected_item_index
+
+    if selected_item_index is None or not (0 <= selected_item_index < len(items_list)):
         output = document.getElementById("out")
         if output:
-            output.textContent = f"Fehler beim Aktualisieren der Liste: {str(e)}"
+            output.textContent = "Bitte wählen Sie zuerst ein Element aus."
+        return
 
-def update_item_field(index, field, value):
-    """Aktualisiert ein einzelnes Feld eines Items"""
-    global items_list
-    try:
-        if 0 <= index < len(items_list):
-            items_list[index][field] = value
-            # Update das Diagramm sofort
-            update_diagram()
-    except Exception as e:
+    if field == "name":
+        items_list[selected_item_index]["name"] = value
+    elif field == "datatype":
+        items_list[selected_item_index]["datatype"] = value
+    elif field == "type":
+        items_list[selected_item_index]["type"] = value
+    elif field == "visibility":
+        items_list[selected_item_index]["visibility"] = value
+
+    update_item_selector()
+    update_diagram()
+
+def delete_selected_item():
+    """Entfernt das aktuell ausgewählte Item"""
+    global items_list, selected_item_index
+
+    if selected_item_index is None:
         output = document.getElementById("out")
         if output:
-            output.textContent = f"Fehler beim Aktualisieren: {str(e)}"
+            output.textContent = "Es ist kein Element ausgewählt."
+        return
 
+    if 0 <= selected_item_index < len(items_list):
+        removed = items_list.pop(selected_item_index)
+        reset_item_form()
+        update_item_selector()
+        update_diagram()
+
+        output = document.getElementById("out")
+        if output:
+            output.textContent = (
+                f"{'Attribut' if removed.get('type') == 'attribute' else 'Methode'} "
+                f"'{removed.get('name', '')}' gelöscht."
+            )
+
+def focus_item_from_diagram(item_index, focus_datatype=False):
+    """Lädt ein Item in das Formular, z.B. nach Klick im Diagramm"""
+    if item_index < 0 or item_index >= len(items_list):
+        return
+
+    load_item_into_form(item_index)
+    update_item_selector()
+
+    if focus_datatype:
+        datatype_elem = document.getElementById("manageItemDatatype")
+        if datatype_elem:
+            datatype_elem.focus()
+            datatype_elem.select()
+
+    output = document.getElementById("out")
+    if output:
+        output.textContent = "Element zum Bearbeiten geladen."
 
 def make_return_value_editable():
     """Macht Rückgabewerte im SVG bearbeitbar"""
@@ -527,7 +504,7 @@ def make_return_value_editable():
                 def make_return_edit_handler(idx):
                     def handler(e):
                         e.stopPropagation()
-                        open_return_value_modal(idx)
+                        focus_item_from_diagram(idx, focus_datatype=True)
                     return handler
                 
                 return_edit_proxy = create_proxy(make_return_edit_handler(method_index))
@@ -580,92 +557,6 @@ def make_return_value_editable():
         if output:
             output.textContent = f"Fehler beim Bearbeitbar-Machen: {str(e)}"
 
-def open_return_value_modal(method_index):
-    """Öffnet ein Modal zur Bearbeitung des Rückgabewerts einer Methode"""
-    global items_list
-    try:
-        if method_index < 0 or method_index >= len(items_list):
-            return
-        
-        item = items_list[method_index]
-        if item.get("type") != "method":
-            return
-        
-        # Erstelle ein einfaches Modal für Rückgabewert
-        existing_modal = document.getElementById("returnValueModal")
-        if existing_modal:
-            existing_modal.remove()
-        
-        modal = document.createElement("div")
-        modal.id = "returnValueModal"
-        modal.className = "edit-modal active"
-        modal.innerHTML = f"""
-            <div class="edit-modal-content">
-                <h3>Rückgabewert bearbeiten</h3>
-                <div class="form-group">
-                    <label for="returnValueInput">Rückgabewert:</label>
-                    <input type="text" id="returnValueInput" value="{item.get('datatype', '').replace('"', '&quot;')}" placeholder="z.B. string, int, void" />
-                </div>
-                <div class="edit-modal-buttons">
-                    <button id="returnValueCancelBtn" class="btn-cancel">Abbrechen</button>
-                    <button id="returnValueSaveBtn" class="btn-save">Speichern</button>
-                </div>
-            </div>
-        """
-        document.body.appendChild(modal)
-        
-        # Event-Listener hinzufügen
-        save_btn = document.getElementById("returnValueSaveBtn")
-        cancel_btn = document.getElementById("returnValueCancelBtn")
-        return_input = document.getElementById("returnValueInput")
-        
-        def save_return_value(e):
-            new_return = return_input.value.strip()
-            items_list[method_index]["datatype"] = new_return
-            modal.remove()
-            
-            # Update die Items-Liste in der UI
-            update_items_list()
-            
-            # Update das Diagramm
-            update_diagram()
-            
-            output = document.getElementById("out")
-            if output:
-                output.textContent = f"Rückgabewert auf '{new_return}' geändert."
-        
-        def cancel_return_value(e):
-            modal.remove()
-        
-        def on_return_keypress(e):
-            if e.key == "Enter":
-                save_return_value(e)
-            elif e.key == "Escape":
-                cancel_return_value(e)
-        
-        save_proxy = create_proxy(save_return_value)
-        cancel_proxy = create_proxy(cancel_return_value)
-        keypress_proxy = create_proxy(on_return_keypress)
-        
-        save_btn.addEventListener("click", save_proxy)
-        cancel_btn.addEventListener("click", cancel_proxy)
-        return_input.addEventListener("keydown", keypress_proxy)
-        
-        # Klick außerhalb schließt Modal
-        def modal_click_handler(e):
-            if e.target == modal:
-                cancel_return_value(e)
-        modal_click_proxy = create_proxy(modal_click_handler)
-        modal.addEventListener("click", modal_click_proxy)
-        
-        # Fokussiere das Input-Feld
-        return_input.focus()
-        return_input.select()
-        
-    except Exception as e:
-        output = document.getElementById("out")
-        if output:
-            output.textContent = f"Fehler beim Öffnen des Rückgabewert-Modals: {str(e)}"
 
 async def render_uml(className=""):
     """Rendert das UML-Diagramm mit dem gegebenen Klassennamen"""
@@ -732,12 +623,12 @@ def update_diagram():
 
 def add_item():
     """Fügt ein neues Attribut oder eine Methode hinzu"""
-    global items_list
+    global items_list, selected_item_index
     try:
-        item_type_elem = document.getElementById("itemType")
-        visibility_elem = document.getElementById("visibility")
-        name_elem = document.getElementById("itemName")
-        datatype_elem = document.getElementById("itemDatatype")
+        item_type_elem = document.getElementById("newItemType")
+        visibility_elem = document.getElementById("newVisibility")
+        name_elem = document.getElementById("newItemName")
+        datatype_elem = document.getElementById("newItemDatatype")
         
         if not item_type_elem or not visibility_elem or not name_elem or not datatype_elem:
             return
@@ -755,20 +646,21 @@ def add_item():
         
         # Füge das Item zur Liste hinzu
         new_item = {
-            "id": get_next_item_id(),
             "type": item_type,
             "visibility": visibility,
             "name": name,
             "datatype": datatype
         }
         items_list.append(new_item)
+        selected_item_index = len(items_list) - 1
         
         # Leere das Eingabefeld
         name_elem.value = ""
         datatype_elem.value = ""
         
-        # Update die Items-Liste
-        update_items_list()
+        # Update die Auswahl-Liste und lade das neue Element in die Verwaltung
+        update_item_selector()
+        load_item_into_form(selected_item_index)
         
         # Update das Diagramm
         update_diagram()
@@ -781,157 +673,6 @@ def add_item():
         if output:
             output.textContent = f"Fehler beim Hinzufügen: {str(e)}"
 
-def remove_item(index):
-    """Entfernt ein Item aus der Liste"""
-    global items_list
-    
-    try:
-        # Doppelte Prüfung: Stelle sicher, dass der Index gültig ist
-        if 0 <= index < len(items_list):
-            removed = items_list.pop(index)
-            # Update die Items-Liste (dies erstellt neue DOM-Elemente und entfernt alte Event-Listener)
-            update_items_list()
-            # Update das Diagramm
-            update_diagram()
-            output = document.getElementById("out")
-            if output:
-                output.textContent = f"{'Attribut' if removed['type'] == 'attribute' else 'Methode'} '{removed['name']}' entfernt."
-        else:
-            output = document.getElementById("out")
-            if output:
-                output.textContent = f"Fehler: Ungültiger Index {index} (Liste hat {len(items_list)} Elemente)"
-    except Exception as e:
-        output = document.getElementById("out")
-        if output:
-            output.textContent = f"Fehler beim Entfernen: {str(e)}"
-
-# def open_edit_modal(item_index):
-#     """Öffnet das Edit-Modal für ein bestimmtes Item"""
-#     global items_list
-#     try:
-#         if item_index < 0 or item_index >= len(items_list):
-#             return
-        
-#         item = items_list[item_index]
-        
-#         # Setze die Werte im Modal
-#         edit_type = document.getElementById("editType")
-#         edit_visibility = document.getElementById("editVisibility")
-#         edit_name = document.getElementById("editName")
-#         edit_datatype = document.getElementById("editDatatype")
-#         modal = document.getElementById("editModal")
-        
-#         if edit_type and edit_visibility and edit_name and edit_datatype and modal:
-#             edit_type.value = item.get("type", "attribute")
-#             edit_visibility.value = item.get("visibility", "public")
-#             edit_name.value = item.get("name", "")
-#             edit_datatype.value = item.get("datatype", "")
-            
-#             # Speichere den aktuellen Index im Modal
-#             modal.setAttribute("data-edit-index", str(item_index))
-            
-#             # Öffne das Modal
-#             modal.classList.add("active")
-#     except Exception as e:
-#         output = document.getElementById("out")
-#         if output:
-#             output.textContent = f"Fehler beim Öffnen des Modals: {str(e)}"
-
-# def close_edit_modal():
-#     """Schließt das Edit-Modal"""
-#     modal = document.getElementById("editModal")
-#     if modal:
-#         modal.classList.remove("active")
-
-    # def save_item_from_modal():
-    #     """Speichert Änderungen aus dem Modal"""
-    #     global items_list
-    #     try:
-    #         modal = document.getElementById("editModal")
-    #         if not modal:
-    #             return
-            
-    #         item_index_str = modal.getAttribute("data-edit-index")
-    #         if not item_index_str:
-    #             return
-            
-    #         item_index = int(item_index_str)
-    #         if item_index < 0 or item_index >= len(items_list):
-    #             return
-            
-    #         edit_type = document.getElementById("editType")
-    #         edit_visibility = document.getElementById("editVisibility")
-    #         edit_name = document.getElementById("editName")
-    #         edit_datatype = document.getElementById("editDatatype")
-            
-    #         if edit_type and edit_visibility and edit_name and edit_datatype:
-    #             items_list[item_index]["type"] = edit_type.value
-    #             items_list[item_index]["visibility"] = edit_visibility.value
-    #             items_list[item_index]["name"] = edit_name.value.strip()
-    #             items_list[item_index]["datatype"] = edit_datatype.value.strip()
-                
-    #             # Schließe das Modal
-    #             close_edit_modal()
-                
-    #             # Update das Diagramm
-    #             update_diagram()
-                
-    #             output = document.getElementById("out")
-    #             if output:
-    #                 output.textContent = "Änderungen gespeichert!"
-    #     except Exception as e:
-    #         output = document.getElementById("out")
-    #         if output:
-    #             output.textContent = f"Fehler beim Speichern: {str(e)}"
-
-    # def delete_item_from_modal():
-    #     """Löscht ein Item aus dem Modal"""
-    #     global items_list
-    #     try:
-    #         modal = document.getElementById("editModal")
-    #         if not modal:
-    #             return
-            
-    #         item_index_str = modal.getAttribute("data-edit-index")
-    #         if not item_index_str:
-    #             return
-            
-    #         item_index = int(item_index_str)
-    #         if item_index < 0 or item_index >= len(items_list):
-    #             return
-            
-    #         # Entferne das Item
-    #         removed = items_list.pop(item_index)
-            
-    #         # Schließe das Modal
-    #         close_edit_modal()
-            
-    #         # Update die Items-Liste (wichtig: muss vor update_diagram() aufgerufen werden)
-    #         update_items_list()
-            
-    #         # Update das Diagramm
-    #         update_diagram()
-            
-    #         output = document.getElementById("out")
-    #         if output:
-    #             output.textContent = f"{'Attribut' if removed['type'] == 'attribute' else 'Methode'} '{removed['name']}' wurde gelöscht."
-    #     except Exception as e:
-    #         output = document.getElementById("out")
-    #         if output:
-    #             output.textContent = f"Fehler beim Löschen: {str(e)}"
-
-def update_item_field(index, field, value):
-    """Aktualisiert ein einzelnes Feld eines Items"""
-    global items_list
-    try:
-        if 0 <= index < len(items_list):
-            items_list[index][field] = value
-            # Update das Diagramm sofort
-            update_diagram()
-    except Exception as e:
-        output = document.getElementById("out")
-        if output:
-            output.textContent = f"Fehler beim Aktualisieren: {str(e)}"
 
 def on_class_name_change(event):
     """Callback-Funktion für Input-Änderungen (optional - live update)"""
@@ -1020,7 +761,7 @@ async def init():
     # Füge Event-Listener für Item-Hinzufügen hinzu
     try:
         add_item_btn = document.getElementById("addItemBtn")
-        item_name_input = document.getElementById("itemName")
+        item_name_input = document.getElementById("newItemName")
         
         if add_item_btn:
             def add_item_wrapper(e):
@@ -1036,50 +777,62 @@ async def init():
             item_name_input.onkeypress = item_name_keypress_proxy
             item_name_input._keypress_proxy = item_name_keypress_proxy
         
-        # Initialisiere die Items-Liste
-        update_items_list()
+        # Initialisiere Auswahl-Elemente
+        reset_item_form()
+        update_item_selector()
 
-        
-        
-        # Initialisiere Modal-Event-Listener
-        modal = document.getElementById("editModal")
-        save_btn = document.getElementById("saveBtn")
-        cancel_btn = document.getElementById("cancelBtn")
-        delete_btn = document.getElementById("deleteBtn")
-        
-        if save_btn:
-            def save_handler(e):
-                save_item_from_modal()
-            save_proxy = create_proxy(save_handler)
-            save_btn.addEventListener("click", save_proxy)
-            save_btn.onclick = save_proxy
-            save_btn._click_proxy = save_proxy
-        
-        if cancel_btn:
-            def cancel_handler(e):
-                close_edit_modal()
-            cancel_proxy = create_proxy(cancel_handler)
-            cancel_btn.addEventListener("click", cancel_proxy)
-            cancel_btn.onclick = cancel_proxy
-            cancel_btn._click_proxy = cancel_proxy
-        
+        item_selector = document.getElementById("itemSelector")
+        delete_btn = document.getElementById("deleteItemBtn")
+        manage_type_elem = document.getElementById("manageItemType")
+        manage_visibility_elem = document.getElementById("manageVisibility")
+        manage_name_elem = document.getElementById("manageItemName")
+        manage_datatype_elem = document.getElementById("manageItemDatatype")
+
+        if item_selector:
+            selector_proxy = create_proxy(on_item_selector_change)
+            item_selector.addEventListener("change", selector_proxy)
+            item_selector.onchange = selector_proxy
+            item_selector._change_proxy = selector_proxy
+
         if delete_btn:
             def delete_handler(e):
-                delete_item_from_modal()
+                delete_selected_item()
             delete_proxy = create_proxy(delete_handler)
             delete_btn.addEventListener("click", delete_proxy)
             delete_btn.onclick = delete_proxy
             delete_btn._click_proxy = delete_proxy
-        
-        # Schließe Modal bei Klick außerhalb
-        if modal:
-            def modal_click_handler(e):
-                if e.target == modal:
-                    close_edit_modal()
-            modal_proxy = create_proxy(modal_click_handler)
-            modal.addEventListener("click", modal_proxy)
-            modal.onclick = modal_proxy
-            modal._click_proxy = modal_proxy
+
+        if manage_type_elem:
+            def on_type_change(e):
+                update_selected_item_field("type", e.target.value)
+            type_proxy = create_proxy(on_type_change)
+            manage_type_elem.addEventListener("change", type_proxy)
+            manage_type_elem.onchange = type_proxy
+            manage_type_elem._change_proxy = type_proxy
+
+        if manage_visibility_elem:
+            def on_visibility_change(e):
+                update_selected_item_field("visibility", e.target.value)
+            vis_proxy = create_proxy(on_visibility_change)
+            manage_visibility_elem.addEventListener("change", vis_proxy)
+            manage_visibility_elem.onchange = vis_proxy
+            manage_visibility_elem._change_proxy = vis_proxy
+
+        if manage_name_elem:
+            def on_name_input(e):
+                update_selected_item_field("name", e.target.value)
+            name_proxy = create_proxy(on_name_input)
+            manage_name_elem.addEventListener("input", name_proxy)
+            manage_name_elem.addEventListener("change", name_proxy)
+            manage_name_elem._input_proxy = name_proxy
+
+        if manage_datatype_elem:
+            def on_datatype_input(e):
+                update_selected_item_field("datatype", e.target.value)
+            datatype_proxy = create_proxy(on_datatype_input)
+            manage_datatype_elem.addEventListener("input", datatype_proxy)
+            manage_datatype_elem.addEventListener("change", datatype_proxy)
+            manage_datatype_elem._input_proxy = datatype_proxy
     except Exception as e:
         if output:
             output.textContent = f"Fehler beim Initialisieren der Items: {str(e)}"
