@@ -350,7 +350,18 @@
           <option value="protected">Protected (#)</option>
         </select>
         <input type="text" id="newItemName" placeholder="z.B. name, getName()..." />
-        <input type="text" id="newItemDatatype" placeholder="Datentyp, z.B. string" />
+        <input type="text" id="newItemDatatype" placeholder="Datentyp, z.B. int" list="itemDatatypeList"/>
+        <datalist id="itemDatatypeList">
+         <option value="str">
+         <option value="int">
+         <option value="long">
+         <option value="float">
+         <option value="complex">
+         <option value="bool">
+         <option value="list">
+         <option value="tuple">
+         </option>
+        </datalist>
         <button id="addItemBtn" type="button" py-onClick="add_item()">Hinzufügen</button>
       </div>
     </div>
