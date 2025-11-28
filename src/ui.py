@@ -144,7 +144,11 @@ def format_item_label(item, index):
     datatype = item.get("datatype", "").strip()
 
     if item_type == "method":
-        signature = f"{name}()"
+        param_str = format_parameters_for_label(item)
+        if param_str:
+            signature = f"{name}({param_str})"
+        else:
+            signature = f"{name}()"
     else:
         signature = name
 
