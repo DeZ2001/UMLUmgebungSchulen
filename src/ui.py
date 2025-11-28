@@ -17,6 +17,45 @@ selected_item_index = None
 # Sichtbarkeitssymbole als Konstante
 VISIBILITY_SYMBOLS = {"public": "+", "private": "-", "protected": "#"}
 
+def format_parameters_for_label(item):
+    """Formatiert Parameterliste für Anzeige/Datenattribute"""
+    if item.get("type") != "method":
+        return ""
+
+    params = item.get("parameters") or []
+    parts = []
+    for param in params:
+        if not isinstance(param, dict):
+            continue
+        pname = str(param.get("name", "") or "").strip()
+        ptype = str(param.get("type", "") or "").strip()
+        if pname or ptype:
+            if pname and ptype:
+                parts.append(f"{pname}:{ptype}")
+            elif pname:
+                parts.append(pname)
+            else:
+                parts.append(ptype)
+
+    return ", ".join(parts)
+
+def build_option_data_attributes(item):
+    """Erstellt data-* Attribute für das Option-Element"""
+    data_map = {
+        "type": item.get("type", "") or "",
+        "visibility": item.get("visibility", "") or "",
+        "name": item.get("name", "") or "",
+        "datatype": item.get("datatype", "") or "",
+        "params": format_parameters_for_label(item) or "",
+    }
+
+    attr_parts = []
+    for key, value in data_map.items():
+        safe = html.escape(str(value), quote=True)
+        attr_parts.append(f'data-{key}="{safe}"')
+
+    return " ".join(attr_parts) + " " if attr_parts else ""
+
 def generate_diagram(className):
     """Erzeugt das Mermaid-Diagramm basierend auf dem Klassennamen und den Items"""
     global items_list
@@ -172,8 +211,9 @@ def update_item_selector():
     options = ["<option value=\"\">Bitte Element wählen</option>"]
     for idx, item in enumerate(items_list):
         selected_attr = " selected" if selected_item_index == idx else ""
+        data_attrs = build_option_data_attributes(item)
         options.append(
-            f"<option value=\"{idx}\"{selected_attr}>{format_item_label(item, idx)}</option>"
+            f"<option value=\"{idx}\" {data_attrs}{selected_attr}>{format_item_label(item, idx)}</option>"
         )
 
     selector.innerHTML = "".join(options)

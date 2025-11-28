@@ -417,7 +417,7 @@
         </select>
         <input type="text" id="manageItemName" placeholder="Name" disabled />
         <input type="text" id="manageItemDatatype" placeholder="Datentyp" disabled list="itemDatatypeList" />
-        <input type="text" id="manageItemPara" placeholder="Parameter" style="display: none;" disabled />
+        <input type="text" id="manageItemPara" placeholder="Parameter"/>
         <button id="deleteItemBtn" type="button" class="btn-delete" disabled>Löschen</button>
       </div>
     </div>
@@ -1132,33 +1132,54 @@ function prepareNewMethodParameters() {
 
   // 当选中的元素改变时，根据元素类型同步管理部分
   document.getElementById("itemSelector").addEventListener("change", function () {
-  const selectEl = this;
-  const option = selectEl.options[selectEl.selectedIndex];
-  const label = option ? (option.textContent || option.innerText).trim() : "";
+    const selectEl = this;
+    const rawValue = selectEl.value;
+    const index = rawValue === "" ? NaN : parseInt(rawValue, 10);
+    const option = selectEl.options[selectEl.selectedIndex];
+    const optType = (option?.dataset?.type || "").toLowerCase().trim();
+    const optName = option?.dataset?.name || "";
+    const optDatatype = option?.dataset?.datatype || "";
+    const optVisibility = option?.dataset?.visibility || "";
+    const optParams = option?.dataset?.params || "";
 
-  if (label) {
-    // 启用管理控件
-    enableManageControls();
+    // 在填充前先清空可编辑字段，避免旧值残留
+    const manageItemPara = document.getElementById("manageItemPara");
+    if (manageItemPara) {
+      manageItemPara.value = "";
+      manageItemPara.style.display = "none";
+    }
+    const manageItemName = document.getElementById("manageItemName");
+    const manageItemDatatype = document.getElementById("manageItemDatatype");
+    const manageItemType = document.getElementById("manageItemType");
+    if (manageItemName) manageItemName.value = optName;
+    if (manageItemDatatype) manageItemDatatype.value = optDatatype;
+    const manageVisibility = document.getElementById("manageVisibility");
+    if (manageVisibility && optVisibility) manageVisibility.value = optVisibility;
 
-    // 用「显示的文字」来判断是不是 Methode
-    const selectedElementType = getSelectedElementType(label);
-
-    document.getElementById("manageItemType").value = selectedElementType;
-    updateManageSectionDisplay(selectedElementType); // 决定是否显示 Parameter-Feld
-
-    // 用「显示的文字」解析 name / typ / parameter
-    fillManageFields(label);
-  } else {
-    // 禁用管理控件
-    disableManageControls();
-  }
-});
+    if (!Number.isNaN(index)) {
+      enableManageControls();
+      // 先根据 option 的 data-type 显示/隐藏参数区（即时反馈）
+      if (manageItemType && optType) {
+        manageItemType.value = optType;
+        updateManageSectionDisplay(optType);
+      }
+       if (manageItemPara && optType === "method") {
+         manageItemPara.value = optParams;
+       }
+      // 再用 Python 数据覆盖，确保字段正确
+      setTimeout(() => fillManageFields(index, optType), 0);
+    } else {
+      disableManageControls();
+    }
+  });
 
   // 更新管理部分的显示状态
   function updateManageSectionDisplay(type) {
     const manageItemDatatype = document.getElementById("manageItemDatatype");
     const manageItemPara = document.getElementById("manageItemPara");
     const datalist = document.getElementById('itemDatatypeList');
+
+    const normalizedType = (type || "").toString().toLowerCase().trim();
     
     // 清理现有的 void 选项
     const voidOption = datalist.querySelector('option[value="void"]');
@@ -1166,7 +1187,7 @@ function prepareNewMethodParameters() {
       voidOption.remove();
     }
 
-    if (type === "method") {
+    if (normalizedType === "method") {
       // 显示参数输入框
       manageItemPara.style.display = "block";
       manageItemPara.placeholder = "Parameter, z.B. name:str, age:int";
@@ -1193,15 +1214,28 @@ function prepareNewMethodParameters() {
     }
   }
 
- // 模拟填充管理字段
-function fillManageFields(selectedValue) {
-  // 选项前缀格式如下：
-  // "1. Methode +ha(x:int, y:float): long"
-  // 从前面的数字提取 index
-  const match = selectedValue.match(/^(\d+)\./);
-  if (!match) return;
-  const index = parseInt(match[1], 10) - 1;
+  function pyValueToJs(value) {
+    if (value == null) {
+      return value;
+    }
+    if (typeof value.toJs === "function") {
+      try {
+        return value.toJs({ create_proxies: false });
+      } catch (err) {
+        console.warn("Konnte PyProxy nicht direkt konvertieren:", err);
+      }
+    }
+    if (typeof value.toString === "function") {
+      return value.toString();
+    }
+    return value;
+  }
 
+// 填充管理字段，使用 select 的数值 index；hintType 用于提前判断 method/attribute
+function fillManageFields(index, hintType = "") {
+  if (index === undefined || index === null || Number.isNaN(index)) return;
+  let pyList = null;
+  let item = null;
   try {
     // 从 PyScript 拿 Python 的 items_list
     const pyodide = window.pyodideGlobals?.pyodide || window.pyodide;
@@ -1210,50 +1244,150 @@ function fillManageFields(selectedValue) {
       return;
     }
     
-    const pyList = pyodide.globals.get("items_list");
+    pyList = pyodide.globals.get("items_list");
     if (!pyList) {
       console.error("items_list not found in Python");
       return;
     }
     
-    const item = pyList.get(index);
+    item = pyList.get(index);
     if (!item) {
       console.error(`Item at index ${index} not found`);
       return;
     }
 
-    // 填写 name & datatype
-    document.getElementById("manageItemName").value = item.get("name") || "";
-    document.getElementById("manageItemDatatype").value = item.get("datatype") || "";
+    // 在访问 PyProxy 前转换/读取，避免丢失数据
+    let jsItem = null;
+    try {
+      jsItem = item.toJs({ dict_converter: Object.fromEntries, create_proxies: false });
+    } catch (err) {
+      console.warn("toJs failed, fallback to direct get:", err);
+      jsItem = {};
+    }
 
+    const manageItemName = document.getElementById("manageItemName");
+    const manageItemDatatype = document.getElementById("manageItemDatatype");
     const manageItemPara = document.getElementById("manageItemPara");
+    const manageItemType = document.getElementById("manageItemType");
+    const manageVisibility = document.getElementById("manageVisibility");
 
-    if (item.get("type") === "method") {
-      // 显示参数框
-      manageItemPara.style.display = "block";
-      const params = item.get("parameters") || [];
+    // 读取字段，优先 JS-Objekt，回fall auf PyProxy.get
+    const itemTypeRaw = (
+      jsItem?.type ??
+      (item.get ? item.get("type") : "")
+    ) || "";
+    const typeFromPy = (typeof itemTypeRaw === "string")
+      ? itemTypeRaw
+      : (itemTypeRaw?.toString ? itemTypeRaw.toString() : "");
+    const itemName = (
+      jsItem?.name ??
+      (item.get ? item.get("name") : "")
+    ) || "";
+    const itemDatatype = (
+      jsItem?.datatype ??
+      (item.get ? item.get("datatype") : "")
+    ) || "";
+    const itemVisibility = (
+      jsItem?.visibility ??
+      (item.get ? item.get("visibility") : "")
+    ) || "public";
 
-      const paramsJs = params.toJs();
+    if (manageItemName) manageItemName.value = itemName;
+    if (manageItemDatatype) manageItemDatatype.value = itemDatatype;
+    const normalizedType = (itemType || hintType || "").toString().toLowerCase().trim();
+    if (manageItemType) manageItemType.value = normalizedType;
+    if (manageVisibility) manageVisibility.value = itemVisibility;
 
-      if (!paramsJs || paramsJs.length === 0) {
-        manageItemPara.value = "";
-      } else {
-        let list = [];
+    updateManageSectionDisplay(normalizedType); // 决定是否显示 Parameter-Feld
 
-        for (const p of paramsJs) {
-          const pname = p["name"] || "";
-          const ptype = p["type"] || "";
-          list.push(`${pname}:${ptype}`);
-        }      
-        manageItemPara.value = list.join(", ");
+    // 参数处理
+    const isMethod = normalizedType === "method";
+
+    const buildParamListString = () => {
+      const parts = [];
+      const getField = (obj, key) => {
+        if (!obj) return "";
+        if (Object.prototype.hasOwnProperty.call(obj, key)) return obj[key];
+        if (obj?.[key] !== undefined) return obj[key];
+        if (typeof obj?.get === "function") {
+          try {
+            return obj.get(key);
+          } catch (err) {
+            return "";
+          }
+        }
+        return "";
+      };
+
+      const normalizeParamEntry = (p) => {
+        try {
+          if (p && typeof p.toJs === "function") {
+            const conv = p.toJs({ dict_converter: Object.fromEntries });
+            if (conv !== undefined) return conv;
+          }
+        } catch (err) {
+          /* ignore */
+        }
+        return p;
+      };
+
+      // 优先 JS 对象
+      const rawJsParams = jsItem?.parameters;
+      const rawPyParams = item.get ? item.get("parameters") : null;
+
+      const candidates = [];
+      if (Array.isArray(rawJsParams)) candidates.push(rawJsParams);
+      if (rawPyParams) candidates.push(rawPyParams);
+
+      for (const raw of candidates) {
+        let arr = [];
+        if (Array.isArray(raw)) {
+          arr = raw.map(normalizeParamEntry);
+        } else if (raw && typeof raw.toJs === "function") {
+          try {
+            arr = raw.toJs({ create_proxies: false, dict_converter: Object.fromEntries });
+          } catch (err) {
+            console.warn("parameter toJs failed:", err);
+            arr = [];
+          }
+        }
+        if (!Array.isArray(arr)) {
+          arr = [];
+        }
+        if (!arr || arr.length === 0) continue;
+        for (const p of arr) {
+          const pname = `${getField(p, "name") || ""}`.toString();
+          const ptype = `${getField(p, "type") || ""}`.toString();
+          if (pname || ptype) {
+            parts.push(`${pname}:${ptype}`);
+          }
+        }
+        if (parts.length > 0) break; // 已经得到有效数据就退出
       }
+      return parts.join(", ");
+    };
+
+    if (isMethod) {
+      manageItemPara.style.display = "block";
+      manageItemPara.placeholder = "Parameter, z.B. name:str, age:int";
+      manageItemDatatype.placeholder = "Rückgabe Typ, z.B. int";
+      manageItemPara.value = buildParamListString();
     } else {
       manageItemPara.style.display = "none";
       manageItemPara.value = "";
+      manageItemDatatype.placeholder = "Datentyp, z.B. int";
     }
   }
   catch (error) {
     console.error("Error filling manage fields:", error);
+  }
+  finally {
+    if (item && typeof item.destroy === "function") {
+      item.destroy();
+    }
+    if (pyList && typeof pyList.destroy === "function") {
+      pyList.destroy();
+    }
   }
 }
 
