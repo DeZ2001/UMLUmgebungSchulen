@@ -362,8 +362,39 @@
          <option value="tuple">
          </option>
         </datalist>
-        <button id="addItemBtn" type="button" py-onClick="add_item()">Hinzufügen</button>
+    
+      
+
+          <!-- parameter -->
+    <div id="parameterSection" style="display: none;">
+      <div class="parameter-group">
+        <input type="text" class="parameter-name" placeholder="Parametername" />
+        <input type="text" class="parameter-type" placeholder="Parametertyp"list="itemparatypeList" />
+        <datalist id="itemparatypeList">
+         <option value="str">
+         <option value="int">
+         <option value="long">
+         <option value="float">
+         <option value="complex">
+         <option value="bool">
+         <option value="list">
+         <option value="tuple">
+         </option>
+        </datalist>
+        <button type="button" onclick="addParameterField()">+</button>
       </div>
+      <div id="additionalParameters"></div>
+    </div>
+       <input type="hidden" id="newItemParameters" />
+
+<button id="addItemBtn"
+        type="button"
+        py-onClick="add_item()">
+  Hinzufügen
+</button>
+      </div>
+      <div class="items-list">
+
     </div>
 
     <div class="panel manage-item-group">
@@ -385,7 +416,8 @@
           <option value="protected">Protected (#)</option>
         </select>
         <input type="text" id="manageItemName" placeholder="Name" disabled />
-        <input type="text" id="manageItemDatatype" placeholder="Datentyp" disabled />
+        <input type="text" id="manageItemDatatype" placeholder="Datentyp" disabled list="itemDatatypeList" />
+        <input type="text" id="manageItemPara" placeholder="Parameter" style="display: none;" disabled />
         <button id="deleteItemBtn" type="button" class="btn-delete" disabled>Löschen</button>
       </div>
     </div>
@@ -946,4 +978,331 @@
     <py-script src="src/ui.py"></py-script>
 
   </body>
+<script>
+  // 确保可以访问Pyodide
+window.pyodideGlobals = window.pyodideGlobals || {};
+
+// 页面加载完成后设置
+document.addEventListener('DOMContentLoaded', function() {
+  // 等待Pyodide加载
+  const checkPyodide = setInterval(() => {
+    if (window.pyodide) {
+      window.pyodideGlobals.pyodide = window.pyodide;
+      clearInterval(checkPyodide);
+    }
+  }, 100);
+});
+  // 根据选择的类型动态调整输入框 - 上半部分
+  document.getElementById("newItemType").addEventListener("change", function () {
+    const type = this.value;
+
+    const datatypeInput = document.getElementById("newItemDatatype");
+    const datalist = document.getElementById('itemDatatypeList');
+    const parameterSection = document.getElementById("parameterSection");
+
+    // 清理现有的 void 选项
+    const voidOption = datalist.querySelector('option[value="void"]');
+    if (voidOption) {
+      voidOption.remove();
+    }
+
+    if (type === "method") {
+      // Datentyp → Rückgabe Typ
+      datatypeInput.placeholder = "Rückgabe Typ, z.B. int";
+      
+      // 添加 void 选项到首位
+      const newOption = document.createElement('option');
+      newOption.value = 'void';
+      datalist.insertBefore(newOption, datalist.firstChild);
+
+      // 显示参数输入框区域
+      parameterSection.style.display = "block";
+    } else {
+      // 隐藏参数输入框区域
+      parameterSection.style.display = "none";
+      
+      // 清空动态添加的参数组
+      document.getElementById("additionalParameters").innerHTML = "";
+
+      // Rückgabe Typ → Datentyp
+      datatypeInput.placeholder = "Datentyp, z.B. int";
+    }
+  });
+
+  // 根据选择的类型动态调整输入框 - 下半部分
+  document.getElementById("manageItemType").addEventListener("change", function () {
+    const type = this.value;
+    const paramInput = document.getElementById("manageItemPara");
+    
+    if (type === "method") {
+      // 显示参数输入框
+      paramInput.style.display = "block";
+      paramInput.placeholder = "Parameter, z.B. name:str, age:int";
+    } else {
+      // 隐藏参数输入框
+      paramInput.style.display = "none";
+      // 清空内容
+      paramInput.value = "";
+    }
+  });
+
+  // 动态添加参数 - 将当前输入框内容添加到参数列表
+  function addParameterField() {
+  const paramNameInput = document.querySelector('.parameter-group .parameter-name');
+  const paramTypeInput = document.querySelector('.parameter-group .parameter-type');
+  const container = document.getElementById("additionalParameters");
+
+  const paramName = paramNameInput.value.trim();
+  const paramType = paramTypeInput.value.trim();
+
+  if (!paramName || !paramType) {
+    alert("Bitte geben Sie Parametername und Parametertyp ein.");
+    return;
+  }
+
+  const group = document.createElement("div");
+  group.classList.add("parameter-item");
+  group.style.cssText =
+    "display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;";
+
+  group.innerHTML = `
+    <span class="param-name" style="flex: 1; font-weight: 500;">${paramName}</span>
+    <span class="param-type" style="flex: 1; color: #666;">${paramType}</span>
+    <button type="button"
+            onclick="this.parentNode.remove()"
+            style="padding: 0.3rem 0.8rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">-</button>
+  `;
+
+  container.appendChild(group);
+
+  paramNameInput.value = "";
+  paramTypeInput.value = "";
+  }
+  // 准备新方法的参数字符串
+  function collectParameters() {
+  const paramItems = document.querySelectorAll('#additionalParameters .parameter-item');
+
+  const params = Array.from(paramItems).map(item => {
+    const name = item.querySelector('.param-name').textContent;
+    const type = item.querySelector('.param-type').textContent;
+    return `${name}:${type}`;
+  });
+
+  return params.join(', ');
+}
+
+function prepareNewMethodParameters() {
+ const type = document.getElementById("newItemType").value;
+  const hiddenInput = document.getElementById("newItemParameters");
+
+  if (type === "method") {
+    // 1. 收集上半部分暂存的参数，写到隐藏字段（给 PyScript 用）
+    const paramString = collectParameters();
+    hiddenInput.value = paramString || "";
+
+    // 2. 启用下面的控件，并切换到 Methode 模式
+    enableManageControls();             // 你已经实现好的函数
+    updateManageSectionDisplay("method"); // 处理显示/placeholder/void 选项
+
+    // 3. 把刚刚的参数显示到下面的 Parameter-Feld
+    const manageItemPara = document.getElementById("manageItemPara");
+    if (manageItemPara) {
+      manageItemPara.value = paramString;
+    }
+  } else {
+    // 添加的是 Attribut：不需要参数
+    hiddenInput.value = "";
+
+    // 下面仍然保持 attribute 状态
+    updateManageSectionDisplay("attribute");
+  }
+
+  // 4. 清空上半部分暂存列表和输入框
+  const additionalContainer = document.getElementById("additionalParameters");
+  if (additionalContainer) {
+    additionalContainer.innerHTML = "";
+  }
+
+  const paramNameInput = document.querySelector('.parameter-group .parameter-name');
+  const paramTypeInput = document.querySelector('.parameter-group .parameter-type');
+  if (paramNameInput) paramNameInput.value = "";
+  if (paramTypeInput) paramTypeInput.value = "";
+
+}
+
+  // 当选中的元素改变时，根据元素类型同步管理部分
+  document.getElementById("itemSelector").addEventListener("change", function () {
+  const selectEl = this;
+  const option = selectEl.options[selectEl.selectedIndex];
+  const label = option ? (option.textContent || option.innerText).trim() : "";
+
+  if (label) {
+    // 启用管理控件
+    enableManageControls();
+
+    // 用「显示的文字」来判断是不是 Methode
+    const selectedElementType = getSelectedElementType(label);
+
+    document.getElementById("manageItemType").value = selectedElementType;
+    updateManageSectionDisplay(selectedElementType); // 决定是否显示 Parameter-Feld
+
+    // 用「显示的文字」解析 name / typ / parameter
+    fillManageFields(label);
+  } else {
+    // 禁用管理控件
+    disableManageControls();
+  }
+});
+
+  // 更新管理部分的显示状态
+  function updateManageSectionDisplay(type) {
+    const manageItemDatatype = document.getElementById("manageItemDatatype");
+    const manageItemPara = document.getElementById("manageItemPara");
+    const datalist = document.getElementById('itemDatatypeList');
+    
+    // 清理现有的 void 选项
+    const voidOption = datalist.querySelector('option[value="void"]');
+    if (voidOption) {
+      voidOption.remove();
+    }
+
+    if (type === "method") {
+      // 显示参数输入框
+      manageItemPara.style.display = "block";
+      manageItemPara.placeholder = "Parameter, z.B. name:str, age:int";
+      manageItemDatatype.placeholder = "Rückgabe Typ, z.B. int";
+      
+      // 添加 void 选项到首位
+      const newOption = document.createElement('option');
+      newOption.value = 'void';
+      datalist.insertBefore(newOption, datalist.firstChild);
+    } else {
+      // 隐藏参数输入框
+      manageItemPara.style.display = "none";
+      manageItemPara.value = "";
+      manageItemDatatype.placeholder = "Datentyp, z.B. int";
+    }
+  }
+
+  // 模拟获取选中元素的类型
+  function getSelectedElementType(selectedValue) {
+    if (selectedValue.includes('(') && selectedValue.includes(')')) {
+      return "method";
+    } else {
+      return "attribute";
+    }
+  }
+
+ // 模拟填充管理字段
+function fillManageFields(selectedValue) {
+  // 选项前缀格式如下：
+  // "1. Methode +ha(x:int, y:float): long"
+  // 从前面的数字提取 index
+  const match = selectedValue.match(/^(\d+)\./);
+  if (!match) return;
+  const index = parseInt(match[1], 10) - 1;
+
+  try {
+    // 从 PyScript 拿 Python 的 items_list
+    const pyodide = window.pyodideGlobals?.pyodide || window.pyodide;
+    if (!pyodide) {
+      console.error("Pyodide not found");
+      return;
+    }
+    
+    const pyList = pyodide.globals.get("items_list");
+    if (!pyList) {
+      console.error("items_list not found in Python");
+      return;
+    }
+    
+    const item = pyList.get(index);
+    if (!item) {
+      console.error(`Item at index ${index} not found`);
+      return;
+    }
+
+    // 填写 name & datatype
+    document.getElementById("manageItemName").value = item.get("name") || "";
+    document.getElementById("manageItemDatatype").value = item.get("datatype") || "";
+
+    const manageItemPara = document.getElementById("manageItemPara");
+
+    if (item.get("type") === "method") {
+      // 显示参数框
+      manageItemPara.style.display = "block";
+      const params = item.get("parameters") || [];
+
+      const paramsJs = params.toJs();
+
+      if (!paramsJs || paramsJs.length === 0) {
+        manageItemPara.value = "";
+      } else {
+        let list = [];
+
+        for (const p of paramsJs) {
+          const pname = p["name"] || "";
+          const ptype = p["type"] || "";
+          list.push(`${pname}:${ptype}`);
+        }      
+        manageItemPara.value = list.join(", ");
+      }
+    } else {
+      manageItemPara.style.display = "none";
+      manageItemPara.value = "";
+    }
+  }
+  catch (error) {
+    console.error("Error filling manage fields:", error);
+  }
+}
+
+  // 启用管理控件
+  function enableManageControls() {
+    const manageItemType = document.getElementById("manageItemType");
+    const manageVisibility = document.getElementById("manageVisibility");
+    const manageItemName = document.getElementById("manageItemName");
+    const manageItemDatatype = document.getElementById("manageItemDatatype");
+    const manageItemPara = document.getElementById("manageItemPara");
+    const deleteItemBtn = document.getElementById("deleteItemBtn");
+    
+    manageItemType.disabled = false;
+    manageVisibility.disabled = false;
+    manageItemName.disabled = false;
+    manageItemDatatype.disabled = false;
+    manageItemPara.disabled = false;
+    deleteItemBtn.disabled = false;
+  }
+
+  // 禁用管理控件
+  function disableManageControls() {
+    const manageItemType = document.getElementById("manageItemType");
+    const manageVisibility = document.getElementById("manageVisibility");
+    const manageItemName = document.getElementById("manageItemName");
+    const manageItemDatatype = document.getElementById("manageItemDatatype");
+    const manageItemPara = document.getElementById("manageItemPara");
+    const deleteItemBtn = document.getElementById("deleteItemBtn");
+    
+    manageItemType.disabled = true;
+    manageVisibility.disabled = true;
+    manageItemName.disabled = true;
+    manageItemDatatype.disabled = true;
+    manageItemPara.disabled = true;
+    deleteItemBtn.disabled = true;
+  }
+
+  // 页面加载时初始化
+  document.addEventListener('DOMContentLoaded', function() {
+    // 设置初始状态
+    updateManageSectionDisplay("attribute");
+
+  // 绑定 Hinzufügen 按钮：在 PyScript 处理前先准备参数
+  const addBtn = document.getElementById("addItemBtn");
+  if (addBtn) {
+    addBtn.addEventListener('click', function () {
+      prepareNewMethodParameters();
+    }, true); // true = 捕获阶段，保证先执行
+  }
+  });
+</script>
 </html>

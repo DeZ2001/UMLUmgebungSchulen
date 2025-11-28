@@ -40,8 +40,6 @@ def generate_diagram(className):
                 datatype = attr.get("datatype", "").strip()
                 line = f"        {visibility_symbol}{attr_name}"
                 if datatype:
-                    # Mermaid rendert besser ohne Leerzeichen: "name: type"
-                    # Das Leerzeichen wird dann durch die Buttons hinzugefügt
                     line += f": {datatype}"
                 diagram_lines.append(line)
     
@@ -56,11 +54,17 @@ def generate_diagram(className):
             method_name = method.get("name", "").strip()
             if method_name:
                 return_type = method.get("datatype", "").strip()
-                line = f"{visibility_symbol}{method_name}()"
+                # 修复：正确获取参数列表
+                params = method.get("parameters", [])
+                if params:
+                    # 确保参数格式正确
+                    param_str = ", ".join(f"{p.get('name', '')}: {p.get('type', '')}" for p in params)
+                else:
+                    param_str = ""
+
+                line = f"        {visibility_symbol}{method_name}({param_str})"
                 if return_type:
-                    # Mermaid rendert besser ohne Leerzeichen: "methodName(): returnType"
-                    # Das Leerzeichen wird dann durch die Buttons hinzugefügt
-                    line += f"{return_type}"
+                    line += f" {return_type}"
                 diagram_lines.append(line)
     
     diagram_lines.append("    }")
@@ -96,6 +100,7 @@ def set_manage_fields_enabled(enabled):
             elem.disabled = not enabled
 
 def reset_item_form():
+
     """Leert das Eingabefeld und hebt die Auswahl auf"""
     global selected_item_index
     selected_item_index = None
@@ -104,6 +109,7 @@ def reset_item_form():
     visibility_elem = document.getElementById("manageVisibility")
     name_elem = document.getElementById("manageItemName")
     datatype_elem = document.getElementById("manageItemDatatype")
+    param_elem = document.getElementById("manageItemPara")  
     selector = document.getElementById("itemSelector")
 
     if type_elem:
@@ -114,6 +120,9 @@ def reset_item_form():
         name_elem.value = ""
     if datatype_elem:
         datatype_elem.value = ""
+    if param_elem:  # 新增：清空参数框
+        param_elem.value = ""
+        param_elem.style.display = "none"  # 隐藏参数框
     if selector:
         selector.value = ""
 
@@ -310,16 +319,10 @@ def make_return_value_editable():
             # Prüfe ob es eine Methode ist (endet mit "()")
             if clean_text.endswith("()"):
                 method_name = clean_text[:-2].strip()
-            elif "() :" in clean_text:
-                # Format: "methodName() : returnType" (mit Leerzeichen)
-                parts = clean_text.split("() :")
-                if len(parts) == 2:
-                    method_name = parts[0].strip()
-                    return_type_from_text = parts[1].strip()
-            elif "():" in clean_text:
-                # Format: "methodName(): returnType" (ohne Leerzeichen - für Kompatibilität)
-                parts = clean_text.split("():")
-                if len(parts) == 2:
+            elif "() " in clean_text and not clean_text.endswith("()"):
+                # Format: "methodName() returnType" (mit Leerzeichen)
+                parts = clean_text.split("() ")
+                if len(parts) >= 2:
                     method_name = parts[0].strip()
                     return_type_from_text = parts[1].strip()
             
@@ -349,17 +352,12 @@ def make_return_value_editable():
                 svg_y = svg_rect.top - container_rect.top
                 
                 # Wenn der Rückgabewert bereits im Text enthalten ist, suche nach dem " :" oder ":" Teil
-                colon_pos = -1
-                if "() :" in text_content and return_type:
-                    # Format mit Leerzeichen: "methodName() : returnType"
-                    colon_pos = text_content.find("() :")
-                    if colon_pos >= 0:
-                        colon_pos += 3  # Position nach "() :"
-                elif "():" in text_content and return_type:
-                    # Format ohne Leerzeichen: "methodName(): returnType" (für Kompatibilität)
-                    colon_pos = text_content.find("():")
-                    if colon_pos >= 0:
-                        colon_pos += 2  # Position nach "():"
+            space_pos = -1
+            if "() " in text_content and return_type:
+            # Format: "methodName() returnType" (mit Leerzeichen)
+                space_pos = text_content.find("() ")
+                if space_pos >= 0:
+                    space_pos += 2 
                 
                 # Suche nach dem Rückgabewert-Text-Element im SVG
                 return_text_elem = None
@@ -377,39 +375,32 @@ def make_return_value_editable():
                                 return_text_elem = other_text
                                 break
                 
-                if colon_pos >= 0:
+                if space_pos >= 0:
                     # Der Rückgabewert ist bereits im Text, finde die Position nach ":"
                     # Positioniere den Button so, dass er den ": returnType" Teil überdeckt
                     # colon_pos zeigt auf die Position nach "():" oder "() :"
                     # Wir müssen die Position des ":" finden
-                    if "() :" in text_content:
+                    if "() " in text_content:
                         # Format mit Leerzeichen: "methodName() : returnType"
-                        colon_in_text = text_content.find("() :")
-                        if colon_in_text >= 0:
-                            text_before_colon = text_content[:colon_in_text + 3]  # Bis einschließlich "() :"
+                        space_in_text = text_content.find("() :")
+                        if space_in_text >= 0:
+                            text_before_space = text_content[:space_in_text + 2]  # Bis einschließlich "() :"
                         else:
-                            text_before_colon = text_content[:colon_pos]
-                    else:
-                        # Format ohne Leerzeichen: "methodName(): returnType"
-                        colon_in_text = text_content.find("():")
-                        if colon_in_text >= 0:
-                            text_before_colon = text_content[:colon_in_text + 2]  # Bis einschließlich "():"
-                        else:
-                            text_before_colon = text_content[:colon_pos]
+                            text_before_space = text_content[:space_pos]
                     
                     try:
                         svg_text_elem = text_elem
                         if hasattr(svg_text_elem, 'getSubStringLength'):
-                            length_before = svg_text_elem.getSubStringLength(0, len(text_before_colon))
+                            length_before = svg_text_elem.getSubStringLength(0, len(text_before_space))
                             # Positioniere den Button leicht nach links, damit er den Doppelpunkt vollständig überdeckt
                             # Der Button zeigt " : returnType" und beginnt leicht vor dem ":" im SVG
                             x_pos_abs = svg_x + method_bbox.x + length_before - 3  # -3px um den Doppelpunkt zu überdecken
                         else:
                             # Fallback: Schätze die Position (leicht nach links für Doppelpunkt-Überdeckung)
-                            x_pos_abs = svg_x + method_bbox.x + len(text_before_colon) * 6 - 3
+                            x_pos_abs = svg_x + method_bbox.x + len(text_before_space) * 6 - 3
                     except:
                         # Fallback: Schätze die Position (leicht nach links für Doppelpunkt-Überdeckung)
-                        x_pos_abs = svg_x + method_bbox.x + len(text_before_colon) * 6 - 3
+                        x_pos_abs = svg_x + method_bbox.x + len(text_before_space) * 6 - 3
                 elif return_text_elem:
                     # Verwende die Position des gefundenen Rückgabewert-Text-Elements
                     return_bbox = return_text_elem.getBBox()
@@ -421,8 +412,8 @@ def make_return_value_editable():
                 y_pos_abs = svg_y + method_bbox.y - 2
                 
                 if return_type:
-                    # Breite für " : returnType" (mit Leerzeichen und Doppelpunkt)
-                    width = max(60, (len(return_type) + 3) * 7)  # +3 für " : "
+                    # Berechne Breite basierend auf Rückgabewert-Länge
+                    width = max(60, (len(return_type) + 1) * 7)  # +1 für Leerzeichen vor dem Doppelpunkt
                 else:
                     width = 100  # Breite für "+ Rückgabewert"
                 
@@ -443,7 +434,7 @@ def make_return_value_editable():
                     # Zeige mit Leerzeichen vor dem Doppelpunkt: " : returnType"
                     # Der Button überdeckt den ursprünglichen ": returnType" Text im SVG
                     # Wichtig: Der Button beginnt genau beim ":" im SVG und zeigt " : returnType"
-                    button.textContent = f" : {return_type}"
+                    button.textContent = f"{return_type}"
                 else:
                     button.textContent = "+ Rückgabewert"
                 button.setAttribute("data-method-index", str(method_index))
@@ -629,6 +620,7 @@ def add_item():
         visibility_elem = document.getElementById("newVisibility")
         name_elem = document.getElementById("newItemName")
         datatype_elem = document.getElementById("newItemDatatype")
+        param_field = document.getElementById("newItemParameters")  # 修复：添加这行
         
         if not item_type_elem or not visibility_elem or not name_elem or not datatype_elem:
             return
@@ -644,25 +636,49 @@ def add_item():
                 output.textContent = "Bitte geben Sie einen Namen ein."
             return
         
-        # Füge das Item zur Liste hinzu
+        # 创建新项目
         new_item = {
             "type": item_type,
             "visibility": visibility,
             "name": name,
-            "datatype": datatype
+            "datatype": datatype,
+            "parameters": []
         }
+        
+        # 参数处理 - 修复逻辑
+        if item_type == "method" and param_field:
+            param_string = param_field.value.strip()
+            params = []
+            if param_string:
+                try:
+                    # 处理 "name:type, name2:type2" 格式
+                    param_pairs = param_string.split(",")
+                    for p in param_pairs:
+                        p = p.strip()
+                        if ":" in p:
+                            name_part, type_part = p.split(":", 1)
+                            params.append({
+                                "name": name_part.strip(),
+                                "type": type_part.strip()
+                            })
+                except Exception as e:
+                    print(f"Error parsing parameters: {e}")
+            
+            new_item["parameters"] = params
+        
+        # 添加到列表
         items_list.append(new_item)
         selected_item_index = len(items_list) - 1
         
-        # Leere das Eingabefeld
+        # 清空输入字段
         name_elem.value = ""
         datatype_elem.value = ""
+        if param_field:
+            param_field.value = ""  # 清空参数字段
         
-        # Update die Auswahl-Liste und lade das neue Element in die Verwaltung
+        # 更新界面
         update_item_selector()
         load_item_into_form(selected_item_index)
-        
-        # Update das Diagramm
         update_diagram()
         
         output = document.getElementById("out")
