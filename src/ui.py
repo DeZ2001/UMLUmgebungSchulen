@@ -56,6 +56,30 @@ def build_option_data_attributes(item):
 
     return " ".join(attr_parts) + " " if attr_parts else ""
 
+def parse_parameter_string(param_string):
+    """Parst eine Kommaseparierte Parameterliste in eine Liste von Dictionaries"""
+    params = []
+    if not param_string:
+        return params
+
+    for chunk in str(param_string).split(","):
+        entry = chunk.strip()
+        if not entry:
+            continue
+
+        if ":" in entry:
+            name_part, type_part = entry.split(":", 1)
+            pname = name_part.strip()
+            ptype = type_part.strip()
+        else:
+            pname = entry
+            ptype = ""
+
+        if pname or ptype:
+            params.append({"name": pname, "type": ptype})
+
+    return params
+
 def generate_diagram(className):
     """Erzeugt das Mermaid-Diagramm basierend auf dem Klassennamen und den Items"""
     global items_list
@@ -252,6 +276,35 @@ def update_selected_item_field(field, value):
         items_list[selected_item_index]["type"] = value
     elif field == "visibility":
         items_list[selected_item_index]["visibility"] = value
+
+    update_item_selector()
+    update_diagram()
+
+def update_selected_item_parameters(raw_value, normalize_field=False):
+    """Aktualisiert Parameter der ausgewählten Methode"""
+    global selected_item_index
+
+    if selected_item_index is None or not (0 <= selected_item_index < len(items_list)):
+        output = document.getElementById("out")
+        if output:
+            output.textContent = "Bitte wählen Sie zuerst ein Element aus."
+        return
+
+    item = items_list[selected_item_index]
+    if item.get("type") != "method":
+        output = document.getElementById("out")
+        if output:
+            output.textContent = "Parameter können nur für Methoden bearbeitet werden."
+        return
+
+    params = parse_parameter_string(raw_value or "")
+    item["parameters"] = params
+
+    if normalize_field:
+        normalized_text = format_parameters_for_label(item)
+        param_elem = document.getElementById("manageItemPara")
+        if param_elem is not None:
+            param_elem.value = normalized_text
 
     update_item_selector()
     update_diagram()
@@ -688,23 +741,7 @@ def add_item():
         # 参数处理 - 修复逻辑
         if item_type == "method" and param_field:
             param_string = param_field.value.strip()
-            params = []
-            if param_string:
-                try:
-                    # 处理 "name:type, name2:type2" 格式
-                    param_pairs = param_string.split(",")
-                    for p in param_pairs:
-                        p = p.strip()
-                        if ":" in p:
-                            name_part, type_part = p.split(":", 1)
-                            params.append({
-                                "name": name_part.strip(),
-                                "type": type_part.strip()
-                            })
-                except Exception as e:
-                    print(f"Error parsing parameters: {e}")
-            
-            new_item["parameters"] = params
+            new_item["parameters"] = parse_parameter_string(param_string)
         
         # 添加到列表
         items_list.append(new_item)
@@ -889,6 +926,15 @@ async def init():
             manage_datatype_elem.addEventListener("input", datatype_proxy)
             manage_datatype_elem.addEventListener("change", datatype_proxy)
             manage_datatype_elem._input_proxy = datatype_proxy
+
+        manage_param_elem = document.getElementById("manageItemPara")
+        if manage_param_elem:
+            def on_param_input(e):
+                update_selected_item_parameters(e.target.value)
+            param_proxy = create_proxy(on_param_input)
+            manage_param_elem.addEventListener("input", param_proxy)
+            manage_param_elem.addEventListener("change", param_proxy)
+            manage_param_elem._input_proxy = param_proxy
     except Exception as e:
         if output:
             output.textContent = f"Fehler beim Initialisieren der Items: {str(e)}"
