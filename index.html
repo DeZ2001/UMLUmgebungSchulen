@@ -16,934 +16,814 @@
     </script>
 
     <style>
-      /*背景*/
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+          
       body {
+        background-color: #f5f7fa;
+        color: #333;
+        line-height: 1.6;
+      }
+          
+      .container {
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
+        height: 100vh;
+        padding: 20px;
+        gap: 20px;
+      }
+          
+      .header {
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        font-family: system-ui, sans-serif;
-        background-color: #f9fafc;
-        margin: 0;
-        padding: 2rem;
+        padding: 15px 20px;
+        background: #2c3e50;
+        color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+          
+      .header h1 {
+        font-size: 1.8rem;
+        font-weight: 600;
+      }
+          
+      .controls {
+        display: flex;
+        gap: 10px;
+      }
+          
+      .btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      }
+          
+      .btn:hover {
+        background-color: #2980b9;
+        transform: translateY(-2px);
+      }
+          
+      .btn-danger {
+        background-color: #e74c3c;
+      }
+          
+      .btn-danger:hover {
+        background-color: #c0392b;
       }
 
-      /*主容器 -使用Grid 布局创建两个窗口*/
-      .main-container {
+      .btn-svg{
+        background-color: #2ecc71;
+      }
+      .btn-svg:hover{
+        background-color: #1cac58;
+      }
+
+      .btn-download{
+        background-color: #f39c12;
+      }
+      .btn-download:hover{
+        background-color: #e18e08;
+      }
+          
+      .panels-container {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 100px;
-        width: 100%;
-        max-width: 1400px;
-        margin-top: 2rem;
+        gap: 20px;
+        transition: all 0.3s ease;
       }
-      
-
-      /* 矢量图像格式 */
-      #uml svg {
-        display: block;
-        pointer-events: none; /* 防止SVG内容干扰拖动 */
-      }
-
-      /* 鼠标点击时的样式 */
-      .uml:active{
-        /*鼠标变为抓取*/
-        cursor: grabbing;
-      }
-      /* 拖动相关样式 */
-      .drag-handle {
-        position: absolute;
-        top: -30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #4a90e2;
-        color: white;
-        padding: 5px 15px;
-        border-radius: 4px 4px 0 0;
-        cursor: move;
-        user-select: none;
-        font-size: 12px;
-        font-weight: bold;
-        z-index: 10;
-        white-space: nowrap;
-        transition: background-color 0.2s ease;
-      }
-
-      .drag-handle:hover {
-        background: #357abd;
-      }
-
-      .drag-handle:active {
-        background: #2a5f8f;
-      }
-
-      #uml {
-        margin-top: 4rem;
-        width: 100%;
-        max-width: 500px;
-        position: relative;
-        cursor: move;
-        transition: transform 0.1s ease, box-shadow 0.2s ease;
-        /* 确保UML容器可以拖动 */
-        user-select: none;
-      }
-
-      #uml.dragging {
-        cursor: grabbing;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-      }
-
-      #uml svg text,
-      #uml svg rect,
-      #uml svg path {
-          pointer-events: auto; /* 但允许文本编辑等交互 */
-      }
-
-      .python-code {
-        background: #d0f6d2;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        
-        width: auto;
-        max-width: 80vw; /* 最大为视口宽度的80% */
-        min-width: 300px; /* 最小宽度 */
-        
-        padding: 1rem;
-        font-family: 'Courier New', Courier, monospace;
-        box-shadow: 0 0 4px rgba(0,0,0,.08);
-        margin-bottom: 1rem;
-        box-sizing: border-box;
-        white-space: pre-wrap;
-        user-select: none;
-        z-index: 100;
-
-        overflow-wrap: break-word;
-        word-break: break-word;
-      }
-
-      
-      .python-code .keyword {
-        color: #0000ff;
-        font-weight: bold;
-      }
-      .python-code .string {
-        color: #a31515;
-      }
-      .python-code .comment {
-        color: #008000;
-        font-style: italic;
-      } 
-      .python-code .function {
-        color: #795e26;
-      }
-      .python-code .class-name {
-        color: #267f99;
-        font-weight: bold;
-      }
-      .python-code .number {
-        color: #098658;
-      }
-
-      .code-with-line-numbers{display: flex;}
-      
-      .line-numbers {
-        background: #d0f6d2;
-        color: #858585;
-        padding: 5px 5px 0px 5px;
-        text-align: right;
-        user-select: none;
-      }
-
-      .code-content {
-        flex: 1;
-        /*top,right,bottom,left*/
-        padding: 5px 5px 0px 5px;
-      }
-
-      /* 确保代码保持正确的格式 */
-      .code-content br {
-          display: none;
-      }
-        
-
-      .edit-button-overlay {
-        position: absolute !important;
-        background: white !important;
-        border: 1px solid #ddd !important;
-        border-radius: 4px !important;
-        padding: 2px 8px !important;
-        font-size: 0.75rem !important;
-        cursor: pointer !important;
-        color: #4a90e2 !important;
-        z-index: 100 !important;
-        white-space: nowrap !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
-        font-weight: 500 !important;
-      }
-      .edit-button-overlay:hover {
-        background: #4a90e2 !important;
-        color: white !important;
-        border-color: #4a90e2 !important;
-      }
-      pre#out {
-        background: #f0f0f0;
-        padding: .75rem 1rem;
-        border-radius: 6px;
-        box-shadow: 0 0 4px rgba(0,0,0,.08);
-        white-space: pre-wrap;
-      }
-      .input-group {
-        margin: 1rem 0;
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-      }
-      .input-group label {
-        font-weight: 500;
-      }
-      .input-group input {
-        padding: 0.5rem 1rem;
-        border: 2px solid #ddd;
-        border-radius: 6px;
-        font-size: 1rem;
-        min-width: 200px;
-      }
-      .input-group input:focus {
-        outline: none;
-        border-color: #4a90e2;
-      }
-      .input-group button {
-        padding: 0.5rem 1.5rem;
-        background-color: #4a90e2;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      .input-group button:hover {
-        background-color: #357abd;
-      }
-      .input-group button:active {
-        background-color: #2a5f8f;
-      }
+          
       .panel {
-        margin: 1.5rem 0;
-        padding: 1rem;
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,.1);
-        max-width: 1000px;
-        width: 90%;
-      }
-      .panel h3 {
-        margin: 0 0 1rem 0;
-        font-size: 1.1rem;
-      }
-      .add-item-group,
-      .manage-item-group {
+        flex: 1;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        transition: all 0.3s ease;
       }
-      .item-selection {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-bottom: 1rem;
+          
+      .panel-header {
+        padding: 15px 20px;
+        background: #3498db;
+        color: white;
+        font-weight: 600;
+        font-size: 1.2rem;
       }
-      .item-selection label {
-        font-weight: 500;
-      }
-      .item-selection select {
-        padding: 0.4rem 0.75rem;
-        border: 2px solid #ddd;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        min-width: 220px;
-      }
-      .add-item-controls {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-        flex-wrap: wrap;
-        margin-bottom: 1rem;
-      }
-      .add-item-controls select {
-        padding: 0.5rem;
-        border: 2px solid #ddd;
-        border-radius: 6px;
-        font-size: 1rem;
-      }
-      .add-item-controls input {
+          
+      .panel-content {
         flex: 1;
-        min-width: 150px;
-        padding: 0.5rem 1rem;
-        border: 2px solid #ddd;
-        border-radius: 6px;
-        font-size: 1rem;
+        padding: 20px;
+        overflow: auto;
       }
-      .add-item-controls button,
-      .manage-controls button {
-        padding: 0.5rem 1rem;
-        background-color: #28a745;
+          
+      .uml-panel {
+        border-left: 5px solid #3498db;
+      }
+          
+      .code-panel {
+        border-left: 5px solid #e74c3c;
+      }
+          
+      .collapsed {
+        flex: 0;
+        width: 0;
+        overflow: hidden;
+      }
+          
+      .uml-diagram {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+          
+      .uml-class {
+        background-color: #f8f9fa;
+        border: 2px solid #3498db;
+        border-radius: 8px;
+        padding: 15px;
+        transition: all 0.3s ease;
+      }
+          
+      .uml-class:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+      }
+          
+      .uml-class-header {
+        background-color: #3498db;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        text-align: center;
+        font-weight: bold;
+      }
+          
+      .uml-class-attributes, .uml-class-methods {
+        margin-bottom: 10px;
+      }
+          
+      .uml-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+        padding: 5px;
+        border-radius: 3px;
+        transition: background-color 0.2s;
+      }
+          
+      .uml-item:hover {
+        background-color: #e8f4fc;
+      }
+          
+      .uml-item input {
+        flex: 1;
+        padding: 5px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        margin-right: 5px;
+      }
+          
+      .uml-item button {
+        background: none;
+        border: none;
+        color: #e74c3c;
+        cursor: pointer;
+        font-weight: bold;
+      }
+          
+      .add-btn {
+        background-color: #2ecc71;
         color: white;
         border: none;
-        border-radius: 6px;
-        font-size: 1rem;
+        padding: 8px 15px;
+        border-radius: 5px;
         cursor: pointer;
+        margin-top: 10px;
+        transition: background-color 0.3s;
       }
-      .add-item-controls button:hover,
-      .manage-controls button:hover {
-        background-color: #218838;
+          
+      .add-btn:hover {
+        background-color: #27ae60;
       }
-      .manage-controls button {
-        background-color: #4a90e2;
+          
+      .code-container {
+        background-color: #d0f6d2;
+        color: #515050;
+        border-radius: 5px;
+        padding: 15px;
+        height: 100%;
+        overflow: auto;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        line-height: 1.5;
       }
-      .manage-controls button.btn-delete {
-        background-color: #dc3545;
+          
+      .code-line {
+        margin-bottom: 5px;
+        white-space: nowrap;
       }
-      .manage-controls button.btn-delete:hover {
-        background-color: #c82333;
+          
+      .code-keyword {
+        color: #3498db;
       }
-      .item-type-select {
-        padding: 0.5rem;
-        border: 2px solid #ddd;
-        border-radius: 6px;
-        font-size: 1rem;
+          
+      .code-function {
+        color: #e74c3c;
       }
-      /* SVG-Interaktivität */
-      #uml svg text {
-        cursor: pointer;
-        transition: fill 0.2s;
+          
+      .code-string {
+        color: #2ecc71;
       }
-      #uml svg text:hover {
-        fill: #4a90e2;
+          
+      .code-comment {
+        color: #7f8c8d;
+      }
+          
+      .code-class {
+        color: #f39c12;
+      }
+          
+      .code-attribute {
+        color: #9b59b6;
+      }
+          
+      @media (max-width: 768px) {
+        .panels-container {
+          flex-direction: column;
+        }
+              
+        .panel {
+          min-height: 300px;
+        }
+              
+        .header {
+          flex-direction: column;
+          gap: 15px;
+        }
+              
+        .controls {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      /*svg 渲染*/
+      .svg-container {
+        position: relative;
+        overflow: scroll;
       }
     </style>
   </head>
-
   <body>
-    <h1>🪶 PyScript + Mermaid UML Demo</h1>
-    <p>Dieses Beispiel zeigt, wie man in PyScript dynamisch UML-Klassendiagramme mit Mermaid erzeugt.</p>
-
-    <!-- Eingabefeld für Klassennamen -->
-    <div class="input-group">
-      <label for="className">Klassenname:</label>
-      <input type="text" id="className" placeholder="z.B. Person, Student..." value="Name der Klasse" />
-      <button id="submitBtn" type="button" py-onClick="update_diagram()">Klassename ändern</button>
-    </div>
-
-    <!-- Hinzufügen von Attributen/Methoden -->
-    <div class="panel add-item-group">
-      <h3>Neues Element hinzufügen</h3>
-      <div class="add-item-controls">
-        <select id="newItemType" class="item-type-select">
-          <option value="attribute">Attribut</option>
-          <option value="method">Methode</option>
-        </select>
-        <select id="newVisibility" class="item-type-select">
-          <option value="public">Public (+)</option>
-          <option value="private">Private (-)</option>
-          <option value="protected">Protected (#)</option>
-        </select>
-        <input type="text" id="newItemName" placeholder="z.B. name, getName()..." />
-        <input type="text" id="newItemDatatype" placeholder="Datentyp, z.B. int" list="itemDatatypeList"/>
-        <datalist id="itemDatatypeList">
-         <option value="str">
-         <option value="int">
-         <option value="long">
-         <option value="float">
-         <option value="complex">
-         <option value="bool">
-         <option value="list">
-         <option value="tuple">
-         </option>
-        </datalist>
-        <button id="addItemBtn" type="button" py-onClick="add_item()">Hinzufügen</button>
+    <div class="container">
+      <div class="header">
+        <h1>Dynamische UML-zu-Code-Generierung</h1>
+          <div class="controls">
+            <button id="generateSvg" class="btn btn-svg">svg generieren</button>
+            <button id="downloadSvg" class="btn btn-download">svg herunterladen</button>
+            <button id="toggleCode" class="btn">Code-Fenster schließen</button>
+            <button id="addClass" class="btn">Klasse hinzufügen</button>
+            <button id="resetAll" class="btn btn-danger">Alles zurücksetzen</button>
+          </div>
       </div>
-    </div>
-
-    <div class="panel manage-item-group">
-      <h3>Bestehende Elemente verwalten</h3>
-      <div class="item-selection">
-        <label for="itemSelector">Element auswählen:</label>
-        <select id="itemSelector">
-          <option value="">Bitte Element wählen</option>
-        </select>
-      </div>
-      <div class="add-item-controls manage-controls">
-        <select id="manageItemType" class="item-type-select" disabled>
-          <option value="attribute">Attribut</option>
-          <option value="method">Methode</option>
-        </select>
-        <select id="manageVisibility" class="item-type-select" disabled>
-          <option value="public">Public (+)</option>
-          <option value="private">Private (-)</option>
-          <option value="protected">Protected (#)</option>
-        </select>
-        <input type="text" id="manageItemName" placeholder="Name" disabled />
-        <input type="text" id="manageItemDatatype" placeholder="Datentyp" disabled />
-        <button id="deleteItemBtn" type="button" class="btn-delete" disabled>Löschen</button>
-      </div>
-    </div>
-
-    <!-- Status-Ausgabe -->
-    <pre id="out">Lade UML-Diagramm...</pre>
-
-
-    <div class="main-container">
-
-      <!-- UML 窗口 -->
-      <div id="uml" style="left:80px"></div>
-      
-    <!-- Python 代码窗口 -->
-      <div class="python-code">
-        <div class="code-with-line-numbers">
-          <div class="line-numbers"></div>
-          <div class="code-content"><span class="keyword">class</span> <span class="class">Person</span>:<br>
-    <span class="keyword">def</span> <span class="function">__init__</span>(<span class="function">self</span>, name, age):<br>
-        <span class="function">self</span>.name = name<br>
-        <span class="function">self</span>.age = age<br>
-    <br>
-    <span class="keyword">def</span> <span class="function">get_name</span>(<span class="function">self</span>):<br>
-        <span class="keyword">return</span> <span class="function">self</span>.name<br>
-    <br>
-    <span class="keyword">def</span> <span class="function">set_age</span>(<span class="function">self</span>, age):<br>
-        <span class="function">self</span>.age = age<br>
-    <br>
-    <span class="keyword">def</span> <span class="function">__str__</span>(<span class="function">self</span>):<br>
-        <span class="keyword">return</span> <span class="string">f"Person(name={self.name}, age={self.age})"</span><br>
+        
+      <div class="panels-container">
+        <div class="panel uml-panel">
+          <div class="panel-header">UML Diagramm Editor</div>
+          <div class="panel-content">
+            <div class="uml-diagram" id="umlDiagram">
+              <!-- UML classes will be dynamically added here -->
+            </div>
+          </div>
+        </div>
+            
+        <div class="panel code-panel" id="codePanel">
+          <div class="panel-header">Generierter Python Code</div>
+          <div class="panel-content">
+            <div class="code-container" id="codeContainer">
+              <!-- Generated code will appear here -->
+            </div>
           </div>
         </div>
       </div>
-
+    </div>
+    <div class="svg-container" id="svgContainer"> 
+      <!-- SVG 渲染图-->
     </div>
 
     <script>
-      // 拖动功能实现
-      class UMLDragger {
-        constructor() {
-          this.umlElement = document.getElementById('uml');
-          this.isDragging = false;
-          this.currentX = 0;
-          this.currentY = 0;
-          this.initialX = 0;
-          this.initialY = 0;
-          this.xOffset = 0;
-          this.yOffset = 0;
-    
-          this.init();
-          }
-    
-        init() {
-          // 添加拖动把手
-          this.createDragHandle();
-            
-          // 绑定事件
-          this.umlElement.addEventListener('mousedown', (e) => this.dragStart(e));
-          document.addEventListener('mousemove', (e) => this.drag(e));
-          document.addEventListener('mouseup', () => this.dragEnd());
-            
-          // 触摸设备支持
-          this.umlElement.addEventListener('touchstart', (e) => this.dragStart(e.touches[0]));
-          document.addEventListener('touchmove', (e) => this.drag(e.touches[0]));
-          document.addEventListener('touchend', () => this.dragEnd());
+      // Initial UML classes data
+      let umlClasses = [
+        {
+          id: 1,
+          name: "Person",
+          attributes: [
+            { id: 1, name: "name", type: "str" },
+            { id: 2, name: "age", type: "int" },
+            { id: 3, name: "email", type: "str" }
+          ],
+          methods: [
+            { id: 1, name: "get_name", returnType: "str" },
+            { id: 2, name: "set_age", returnType: "", parameters: "age: int" },
+            { id: 3, name: "send_email", returnType: "bool", parameters: "message: str" }
+          ]
+        }
+      ];
 
-          this.loadPosition();
-        }
-    
-        createDragHandle() {
-          // 如果已经存在拖动把手，先移除
-          const existingHandle = this.umlElement.querySelector('.drag-handle');
-          if (existingHandle) {
-            existingHandle.remove();
-          }
-        
-          // 创建拖动把手
-          const dragHandle = document.createElement('div');
-          dragHandle.className = 'drag-handle';
-          dragHandle.innerHTML = '拖动';
-          dragHandle.style.cssText = `
-            position: absolute;
-            top: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #4a90e2;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 4px 4px 0 0;
-            cursor: move;
-            user-select: none;
-            font-size: 12px;
-            font-weight: bold;
-            z-index: 10;
-            white-space: nowrap;
-          `;
-        
-          this.umlElement.style.position = 'relative';
-          this.umlElement.appendChild(dragHandle);
-        }
-    
-        dragStart(e) {
-          // 只有当点击拖动把手或SVG本身时才开始拖动
-          if (e.target.classList.contains('drag-handle') || 
-            e.target.tagName === 'svg' || 
-            e.target.closest('svg')) {
-            
-            this.initialX = e.clientX - this.xOffset;
-            this.initialY = e.clientY - this.yOffset;
-            
-            if (this.umlElement.contains(e.target)) {
-              this.isDragging = true;
-              this.umlElement.style.cursor = 'grabbing';
-              
-              // 添加拖动时的视觉反馈
-              this.umlElement.style.boxShadow = '0 0 0 rgba(0,0,0,0.3)';
-              this.umlElement.style.transition = 'box-shadow 0.2s ease';
-            }
-          }
-        }
-    
-        drag(e) {
-          if (this.isDragging) {
-            e.preventDefault();
-            
-            this.currentX = e.clientX - this.initialX;
-            this.currentY = e.clientY - this.initialY;
-            
-            this.xOffset = this.currentX;
-            this.yOffset = this.currentY;
-            
-            this.setTranslate(this.currentX, this.currentY);
-          }
-        }
-    
-        dragEnd() {
-          this.isDragging = false;
-          this.umlElement.style.cursor = 'move';
-        
-          // 移除拖动时的视觉反馈
-          this.umlElement.style.boxShadow = '';
-        
-          // 保存位置到本地存储
-          this.savePosition();
-        }
-    
-        setTranslate(xPos, yPos) {
-          this.umlElement.style.transform = `translate(${xPos}px, ${yPos}px)`;
-        }
-    
-        savePosition() {
-          // 保存位置到本地存储，这样刷新后位置不会丢失
-          const position = {
-            x: this.xOffset,
-            y: this.yOffset
-          };
-          localStorage.setItem('umlPosition', JSON.stringify(position));
-        }
-    
-        loadPosition() {
-          // 从本地存储加载位置
-          const saved = localStorage.getItem('umlWindowPosition');
-          if (saved) {
-            const position = JSON.parse(saved);
-            this.xOffset = position.x;
-            this.yOffset = position.y;
-            this.setTranslate(this.xOffset, this.yOffset);
-          }
-        }
-    
-        resetPosition() {
-          // 重置位置
-          this.xOffset = 0;
-          this.yOffset = 0;
-          this.setTranslate(0, 0);
-          localStorage.removeItem('umlPosition');
-        }
-      }
+      let nextClassId = 2;
+      let nextAttributeId = 4;
+      let nextMethodId = 4;
 
-      /*
-      class CodeDragger {
-        constructor() {
-          this.codeElement = document.getElementById('python-code');
-          this.isDragging = false;
-          this.currentX = 0;
-          this.currentY = 0;
-          this.initialX = 0;
-          this.initialY = 0;
-          this.xOffset = 0;
-          this.yOffset = 0;
-    
-          this.init();
-          }
-    
-        init() {
-          // 添加拖动把手
-          this.createDragHandle();
-            
-          // 绑定事件
-          this.codeElement.addEventListener('mousedown', (e) => this.dragStart(e));
-          document.addEventListener('mousemove', (e) => this.drag(e));
-          document.addEventListener('mouseup', () => this.dragEnd());
-            
-          // 触摸设备支持
-          this.codeElement.addEventListener('touchstart', (e) => this.dragStart(e.touches[0]));
-          document.addEventListener('touchmove', (e) => this.drag(e.touches[0]));
-          document.addEventListener('touchend', () => this.dragEnd());
-        }
-    
-        createDragHandle() {
-          // 如果已经存在拖动把手，先移除
-          const existingHandle = this.codeElement.querySelector('.drag-handle');
-          if (existingHandle) {
-            existingHandle.remove();
-          }
-        
-          // 创建拖动把手
-          const dragHandle = document.createElement('div');
-          dragHandle.className = 'drag-handle';
-          dragHandle.innerHTML = '拖动';
-          dragHandle.style.cssText = `
-            position: absolute;
-            top: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #4a90e2;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 4px 4px 0 0;
-            cursor: move;
-            user-select: none;
-            font-size: 12px;
-            font-weight: bold;
-            z-index: 10;
-            white-space: nowrap;
-          `;
-        
-          this.codeElement.style.position = 'fixed';
-          this.codeElement.appendChild(this.dragHandle);
-        }
-    
-        dragStart(e) {
-          // 只有当点击拖动把手时才开始拖动
-          
-            this.initialX = e.clientX - this.xOffset;
-            this.initialY = e.clientY - this.yOffset;
-            
-            if (this.codeElement.contains(e.target)) {
-              this.isDragging = true;
-              this.codeElement.style.cursor = 'grabbing';
-              
-              // 添加拖动时的视觉反馈
-              this.umlElement.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
-              this.codeElement.style.transition = 'box-shadow 0.2s ease';
-            }
-        }
-    
-        drag(e) {
-          if (this.isDragging) {
-            e.preventDefault();
-            
-            this.currentX = e.clientX - this.initialX;
-            this.currentY = e.clientY - this.initialY;
-            
-            this.xOffset = this.currentX;
-            this.yOffset = this.currentY;
-            
-            this.setTranslate(this.currentX, this.currentY);
-          }
-        }
-    
-        dragEnd() {
-          this.isDragging = false;
-          this.codeElement.style.cursor = 'move';
-        
-          // 移除拖动时的视觉反馈
-          this.codeElement.style.boxShadow = '';
-        
-          // 保存位置到本地存储
-          this.savePosition();
-        }
-    
-        setTranslate(xPos, yPos) {
-          this.codeElement.style.transform = `translate(${xPos}px, ${yPos}px)`;
-        }
-    
-        savePosition() {
-          // 保存位置到本地存储，这样刷新后位置不会丢失
-          const position = {
-            x: this.xOffset,
-            y: this.yOffset
-          };
-          localStorage.setItem('codePosition', JSON.stringify(position));
-        }
-    
-        loadPosition() {
-          // 从本地存储加载位置
-          const saved = localStorage.getItem('codePosition');
-          if (saved) {
-            const position = JSON.parse(saved);
-            this.xOffset = position.x;
-            this.yOffset = position.y;
-            this.setTranslate(this.xOffset, this.yOffset);
-          }
-        }
-    
-        resetPosition() {
-          // 重置位置
-          this.xOffset = 0;
-          this.yOffset = 0;
-          this.setTranslate(0, 0);
-          localStorage.removeItem('codePosition');
-        }
-      }
-        */
-
-      // 初始化拖动功能
-      let umlDragger;
-      //let codeDragger;
-
-      // 等待页面加载完成
+      // Initialize the application
       document.addEventListener('DOMContentLoaded', function() {
-        /*
-        // 代码拖动功能
-        setTimeout(() => {
-          codeDragger = new CodeDragger();
-        }, 1000);
-        */
-
-        // UML 拖动功能
-        setTimeout(() => {
-          umlDragger = new UMLDragger();
-          umlDragger.loadPosition();
-        }, 1000);
-
+        renderUmlDiagram();
+        generateCode();
+                
+        // Event listeners
+        document.getElementById('generateSvg').addEventListener('click', generateSvg);
+        document.getElementById('downloadSvg').addEventListener('click', downloadSvg);
+        document.getElementById('toggleCode').addEventListener('click', toggleCodePanel);
+        document.getElementById('addClass').addEventListener('click', addNewClass);
+        document.getElementById('resetAll').addEventListener('click', resetAll);
       });
 
-      function addResetButton() {
-        // 创建重置位置按钮
-        const resetBtn = document.createElement('button');
-        resetBtn.textContent = 'UML-Position zurücksetzen';
-        resetBtn.style.cssText = `
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          padding: 8px 16px;
-          background: #6c757d;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-          z-index: 1000;
-          cursor: pointer;
+      // Render UML diagram based on data
+      function renderUmlDiagram() {
+        const umlDiagram = document.getElementById('umlDiagram');
+        umlDiagram.innerHTML = '';
+                
+        umlClasses.forEach(umlClass => {
+          const classElement = document.createElement('div');
+          classElement.className = 'uml-class';
+          classElement.innerHTML = `
+            <div class="uml-class-header">
+              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname">
+            </div>
+            <div class="uml-class-attributes">
+              <h4>Attribute:</h4>
+              <div class="attributes-list" data-class-id="${umlClass.id}">
+                ${umlClass.attributes.map(attr => `
+                  <div class="uml-item">
+                    <input type="text" value="${attr.name}" data-class-id="${umlClass.id}" data-attr-id="${attr.id}" data-field="name" placeholder="Attributname">
+                    <span>:</span>
+                    <input type="text" value="${attr.type}" data-class-id="${umlClass.id}" data-attr-id="${attr.id}" data-field="type" placeholder="Typ">
+                    <button class="remove-attr" data-class-id="${umlClass.id}" data-attr-id="${attr.id}">×</button>
+                  </div>
+                `).join('')}
+              </div>
+              <button class="add-btn add-attr" data-class-id="${umlClass.id}">+ Attribut hinzufügen</button>
+            </div>
+            <div class="uml-class-methods">
+              <h4>Methoden:</h4>
+              <div class="methods-list" data-class-id="${umlClass.id}">
+                ${umlClass.methods.map(method => `
+                  <div class="uml-item">
+                    <input type="text" value="${method.name}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="name" placeholder="Methodenname">
+                    <span>(</span>
+                    <input type="text" value="${method.parameters || ''}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="parameters" placeholder="Parameter">
+                    <span>)</span>
+                    <span>:</span>
+                    <input type="text" value="${method.returnType}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="returnType" placeholder="Rückgabetyp">
+                    <button class="remove-method" data-class-id="${umlClass.id}" data-method-id="${method.id}">×</button>
+                  </div>
+                `).join('')}
+              </div>
+              <button class="add-btn add-method" data-class-id="${umlClass.id}">+ Methode hinzufügen</button>
+            </div>
+            <button class="btn btn-danger remove-class" data-class-id="${umlClass.id}">Klasse entfernen</button>
           `;
-    
-        resetBtn.onclick = () => {
-          if (umlDragger) {
-            umlDragger.resetPosition();
-          }
-        };
-
-        document.body.appendChild(resetBtn);
+                  
+          umlDiagram.appendChild(classElement);
+        });
+              
+        // Add event listeners for dynamic elements
+        addEventListeners();
       }
-      
-      /*
-      function addResetButtonVonCode() {
-        // 创建重置位置按钮
-        const resetBtn = document.createElement('button');
-        resetBtn.textContent = 'Python-Code Position zurücksetzen';
-        resetBtn.style.cssText = `
-          position: fixed;
-          bottom: 60px;
-          right: 20px;
-          padding: 8px 16px;
-          background: #6c757d;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-          z-index: 1000;
-          `;
-    
-        resetBtn.onclick = () => {
-          if (codeDragger) {
-            codeDragger.resetPosition();
-          }
-        };
 
-        document.body.appendChild(resetBtn);
-      }
-      */
-      
-      // 添加重置位置按钮
-      document.addEventListener('DOMContentLoaded', addResetButton);
-      //document.addEventListener('DOMContentLoaded', addResetButtonVonCode);
-
-      class LineNumberManager {
-        constructor(codeElement, lineNumbersElement) {
-          this.codeElement = codeElement;
-          this.lineNumbersElement = lineNumbersElement;
-          this.init();
-        }
-    
-        init() {
-            this.updateLineNumbers();
-            
-            // 监听代码变化
-            this.codeElement.addEventListener('input', () => {
-                this.updateLineNumbers();
-            });
-            
-            // 监听粘贴事件
-            this.codeElement.addEventListener('paste', () => {
-                setTimeout(() => {
-                    this.updateLineNumbers();
-                }, 10);
-            });
-            
-        }
-    
-        updateLineNumbers() {
-            const code = this.codeElement.value || this.codeElement.textContent;
-            const lines = code.split('\n').length;
-
-            // 生成行号HTML
-            let lineNumbersHTML = '';
-            for (let i = 0; i < lines; i++) {
-                lineNumbersHTML += `${i}<br>`;
+      // Add event listeners for dynamic elements
+      function addEventListeners() {
+        // Class name changes
+        document.querySelectorAll('.uml-class-header input').forEach(input => {
+          input.addEventListener('input', function() {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            updateClassName(classId, this.value);
+          });
+        });
+              
+        // Attribute changes
+        document.querySelectorAll('.uml-item input').forEach(input => {
+          input.addEventListener('input', function() {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            const field = this.getAttribute('data-field');
+                        
+            if (this.hasAttribute('data-attr-id')) {
+              const attrId = parseInt(this.getAttribute('data-attr-id'));
+              updateAttribute(classId, attrId, field, this.value);
+            } 
+            else if (this.hasAttribute('data-method-id')) {
+              const methodId = parseInt(this.getAttribute('data-method-id'));
+              updateMethod(classId, methodId, field, this.value);
             }
-            
-            this.lineNumbersElement.innerHTML = lineNumbersHTML;
-            
-             // 同步高度
-            // this.lineNumbersElement.style.height = this.codeElement.scrollHeight + 'px'; 
+          });
+        });
+                
+        // Add attribute buttons
+        document.querySelectorAll('.add-attr').forEach(button => {
+          button.addEventListener('click', function() {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            addAttribute(classId);
+          });
+        });
+                
+        // Add method buttons
+        document.querySelectorAll('.add-method').forEach(button => {
+          button.addEventListener('click', function() {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            addMethod(classId);
+          });
+        });
+              
+        // Remove attribute buttons
+        document.querySelectorAll('.remove-attr').forEach(button => {
+          button.addEventListener('click', function() {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            const attrId = parseInt(this.getAttribute('data-attr-id'));
+            removeAttribute(classId, attrId);
+          });
+        });
+                
+        // Remove method buttons
+        document.querySelectorAll('.remove-method').forEach(button => {
+          button.addEventListener('click', function() {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            const methodId = parseInt(this.getAttribute('data-method-id'));
+            removeMethod(classId, methodId);
+          });
+        });
+              
+        // Remove class buttons
+        document.querySelectorAll('.remove-class').forEach(button => {
+          button.addEventListener('click', function() {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            removeClass(classId);
+          });
+        });
+      }
 
-            this.syncScroll();
+      // Update class name
+      function updateClassName(classId, newName) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (umlClass) {
+          umlClass.name = newName;
+          generateCode();
         }
-        syncScroll() {
-            this.codeElement.addEventListener('scroll', () => {
-                this.lineNumbersElement.scrollTop = this.codeElement.scrollTop;
-            });
-        }
-        
-        insertText(text) {
-          const selection = window.getSelection();
-          if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            const textNode = document.createTextNode(text);
-            range.insertNode(textNode);
-            range.setStartAfter(textNode);
-            range.setEndAfter(textNode);
-            selection.removeAllRanges();
-            selection.addRange(range);
+      }
+
+      // Update attribute
+      function updateAttribute(classId, attrId, field, value) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (umlClass) {
+          const attribute = umlClass.attributes.find(a => a.id === attrId);
+          if (attribute) {
+            attribute[field] = value;
+            generateCode();
           }
         }
-        getCode() {
-          return this.editor.textContent;
-        }
-    
-        setCode(code) {
-            this.editor.textContent = code;
-            this.updateLineNumbers();
-            this.applySyntaxHighlighting();
-        }
-    
-        // 添加正确缩进的新行
-        addLine() {
-            const currentCode = this.getCode();
-            const lines = currentCode.split('\n');
-            const lastLine = lines[lines.length - 1] || '';
-            
-            // 计算缩进（最后一个非空行的缩进）
-            const indentMatch = lastLine.match(/^(\s*)/);
-            const indent = indentMatch ? indentMatch[1] : '';
-            
-            this.setCode(currentCode + '\n' + indent);
-        }
-    
-        clear() {
-          this.setCode('');
-        }
-      }   
-      // 初始化正确的Python代码
-      const correctPythonCode = `class Person:
-          def __init__(self, name, age):
-              self.name = name
-              self.age = age
+      }
 
-          def get_name(self):
-              return self.name
+      // Update method
+      function updateMethod(classId, methodId, field, value) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (umlClass) {
+          const method = umlClass.methods.find(m => m.id === methodId);
+          if (method) {
+            method[field] = value;
+            generateCode();
+          }
+        }
+      }
 
-          def set_age(self, age):
-              self.age = age
+      // Add new attribute
+      function addAttribute(classId) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (umlClass) {
+          umlClass.attributes.push({
+            id: nextAttributeId++,
+            name: "",
+            type: ""
+          });
+          renderUmlDiagram();
+          generateCode();
+        }
+      }
 
-          def __str__(self):
-              return f"Person(name={self.name}, age={self.age})"`;
+      // Add new method
+      function addMethod(classId) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (umlClass) {
+          umlClass.methods.push({
+            id: nextMethodId++,
+            name: "",
+            returnType: ""
+          });
+          renderUmlDiagram();
+          generateCode();
+        }
+      }
 
-      document.addEventListener('DOMContentLoaded', function() {
-        const pythoneditor = new LineNumberManager(document.querySelector('.code-content'), document.querySelector('.line-numbers'));
-          
-        pythoneditor.setCode(correctPythonCode);
-      });
+      // Remove attribute
+      function removeAttribute(classId, attrId) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (umlClass) {
+          umlClass.attributes = umlClass.attributes.filter(a => a.id !== attrId);
+          renderUmlDiagram();
+          generateCode();
+        }
+      }
+
+      // Remove method
+      function removeMethod(classId, methodId) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (umlClass) {
+          umlClass.methods = umlClass.methods.filter(m => m.id !== methodId);
+          renderUmlDiagram();
+          generateCode();
+        }
+      }
+
+      // Add new class
+      function addNewClass() {
+        umlClasses.push({
+          id: nextClassId++,
+          name: "",
+          attributes: [
+            { id: nextAttributeId++, name: "", type: "" }
+          ],
+          methods: [
+            { id: nextMethodId++, name: "", returnType: "" }
+          ]
+        });
+        renderUmlDiagram();
+        generateCode();
+      }
+
+      // Remove class
+      function removeClass(classId) {
+        umlClasses = umlClasses.filter(c => c.id !== classId);
+        renderUmlDiagram();
+        generateCode();
+      }
+
+      // Reset all
+      function resetAll() {
+        if (confirm("Möchten Sie wirklich alle Klassen zurücksetzen? Dies kann nicht rückgängig gemacht werden.")) {
+          umlClasses = [
+            {
+              id: 1,
+              name: "Person",
+              attributes: [
+                { id: 1, name: "name", type: "str" },
+                { id: 2, name: "age", type: "int" },
+                { id: 3, name: "email", type: "str" }
+              ],
+              methods: [
+                { id: 1, name: "get_name", returnType: "str" },
+                { id: 2, name: "set_age", returnType: "", parameters: "age: int" },
+                { id: 3, name: "send_email", returnType: "bool", parameters: "message: str" }
+              ]
+            }
+          ];
+          nextClassId = 2;
+          nextAttributeId = 4;
+          nextMethodId = 4;
+          renderUmlDiagram();
+          generateCode();
+          document.getElementById('svgContainer').style.visibility = "hidden";
+        }
+      }
+
+      // Toggle code panel
+      function toggleCodePanel() {
+        const codePanel = document.getElementById('codePanel');
+        const toggleButton = document.getElementById('toggleCode');
+              
+        if (codePanel.classList.contains('collapsed')) {
+          codePanel.classList.remove('collapsed');
+          toggleButton.textContent = 'Code-Fenster schließen';
+        } 
+        else {
+          codePanel.classList.add('collapsed');
+          toggleButton.textContent = 'Code-Fenster anzeigen';
+        }
+      }
+        
+      // Generate Python code from UML data
+      function generateCode() {
+        const codeContainer = document.getElementById('codeContainer');
+        let code = '';
+        let beispielwert;
+                
+        umlClasses.forEach(umlClass => {
+          // Class definition
+          code += `<div class="code-line"><span class="code-keyword">class</span> <span class="code-class">${umlClass.name}</span>:</div>`;
+                    
+          // Constructor
+          if (umlClass.attributes.length > 0) {
+            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>`;
+                          
+            // Add parameters for attributes
+            umlClass.attributes.forEach(attr => {
+              const beispielwert = getDefaultValueForType(attr.type);
+              code += `, ${attr.name}= ${beispielwert}`;
+            });
+                        
+            code += `):</div>`;
+                        
+            // Initialize attributes in constructor
+            umlClass.attributes.forEach(attr => {
+              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">self</span>.<span class="code-attribute">${attr.name}</span> = ${attr.name}</div>`;
+            });
+          } 
+          else {
+            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>):</div>`;
+            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">pass</span></div>`;
+          }
+                    
+          code += `<div class="code-line"></div>`;
+                    
+          // Methods
+          umlClass.methods.forEach(method => {
+            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">${method.name}</span>(<span class="code-keyword">self</span>`;
+                        
+            // Add method parameters
+            if (method.parameters) {
+              const params = method.parameters.split(',').map(p => p.trim());
+              params.forEach(param => {
+                const [paramName, paramType] = param.split(':').map(p => p.trim());
+                code += `, ${paramName}`;
+              });
+            }
+                    
+            code += `):</div>`;
+            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># TODO: Implement ${method.name} method</span></div>`;
+                      
+            // Add return statement based on return type
+            if (method.returnType !== 'void') {
+              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> <span class="code-keyword">None</span> </div>`;
+            }
+                        
+            code += `<div class="code-line"></div>`;
+          });
+                    
+          code += `<div class="code-line"></div>`;
+        });
+                
+        // Example usage
+        if (umlClasses.length > 0) {
+          code += `<div class="code-line"><span class="code-comment"># Beispielverwendung</span></div>`;
+          //eine Objekt erstellen
+          code += `<div class="code-line">${umlClasses[0].name.toLowerCase()} = <span class="code-class">${umlClasses[0].name}</span>()</div>`;
+                    
+          if (umlClasses[0].attributes.length > 0) {
+            umlClasses[0].attributes.forEach(attr => {
+              const beispielwert = getDefaultValueForType(attr.type);
+              code += `<div class="code-line">${umlClasses[0].name.toLowerCase()}.${attr.name} = <span class="code-string">${beispielwert}</span></div>`;
+            });
+          }
+                    
+          if (umlClasses[0].methods.length > 0) {
+            code += `<div class="code-line">${umlClasses[0].name.toLowerCase()}.${umlClasses[0].methods[0].name}()</div>`;
+          }
+        }
+                
+        codeContainer.innerHTML = code;
+      }
+
+      function getDefaultValueForType(type){
+        const typeMapping = {
+          'String': '""',
+          'str': '""',
+          'Integer': '0',
+          'int': '0',
+          'Float': '0.0',
+          'float': '0.0',
+          'Boolean': 'False',
+          'bool': 'False',
+          'List': '[]',
+          'list': '[]',
+          'Dict': '{}',
+          'dict': '{}',
+          'Tuple': '()',
+          'tuple': '()'
+        };
+      
+        return typeMapping[type] || 'None';
+      }
+
+      function generateSvg(){
+        const svgContainer = document.getElementById('svgContainer');
+        svgContainer.style.visibility = "visible";
+        let svgContent = `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">`;
+                
+        // Add styles
+        svgContent += `<style>
+          .class-rect { fill: #e8f4f8; stroke: #3498db; }
+          .class-header { fill: #3498db; }
+          .class-text { fill: white; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; }
+          .attr-text { fill: #2c3e50; font-family: Arial, sans-serif; font-size: 12px; }
+          .method-text { fill: #2c3e50; font-family: Arial, sans-serif; font-size: 12px; }
+          .separator { stroke: #3498db; stroke-width: 1; }
+        </style>`;
+                
+        // Calculate positions for classes
+        const classWidth = 500;
+        const classHeight = 500;
+        const classSpacing = 100;
+        const startX = 50;
+        const startY = 50;
+                
+        // Draw each class
+        umlClasses.forEach((umlClass, index) => {
+          const x = startX + index * (classWidth + classSpacing);
+          const y = startY;
+                  
+          // Class rectangle
+          svgContent += `<rect x="${x}" y="${y}" width="${classWidth}" height="${classHeight}" class="class-rect" rx="5" />`;
+                    
+          // Class header
+          svgContent += `<rect x="${x}" y="${y}" width="${classWidth}" height="30" class="class-header" />`;
+          svgContent += `<text x="${x + classWidth/2}" y="${y + 20}" text-anchor="middle" class="class-text">${umlClass.name}</text>`;
+                    
+          // Attributes section
+          let attrY = y + 50;
+          svgContent += `<text x="${x + 10}" y="${attrY}" class="attr-text">Attribute:</text>`;
+                    
+          umlClass.attributes.forEach(attr => {
+            attrY += 15;
+            svgContent += `<text x="${x + 15}" y="${attrY}" class="attr-text">- ${attr.name}: ${attr.type}</text>`;
+          });
+                    
+          // Methods section
+          let methodY = attrY + 20;
+          svgContent += `<text x="${x + 10}" y="${methodY}" class="method-text">Methoden:</text>`;
+                    
+          umlClass.methods.forEach(method => {
+            methodY += 15;
+            const params = method.parameters ? `(${method.parameters})` : '()';
+            svgContent += `<text x="${x + 15}" y="${methodY}" class="method-text">+ ${method.name}${params}: ${method.returnType}</text>`;
+          });
+                    
+          // Separators
+          svgContent += `<line x1="${x}" y1="${y + 30}" x2="${x + classWidth}" y2="${y + 30}" class="separator" />`;
+          svgContent += `<line x1="${x}" y1="${attrY + 5}" x2="${x + classWidth}" y2="${attrY + 5}" class="separator" />`;
+        });
+                
+        svgContent += `</svg>`;
+        svgContainer.innerHTML = svgContent;
+      }
+
+      function downloadSvg() {
+        const svgContainer = document.getElementById('svgContainer');
+        const svgContent = svgContainer.innerHTML;
+                
+        if (!svgContent || svgContent === '') {
+          alert('Bitte generieren Sie zuerst ein SVG-Diagramm.');
+          return;
+        }
+                  
+        // Create a Blob with the SVG content
+        const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+              
+        // Create a download link
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'uml-diagram.svg';
+        document.body.appendChild(a);
+        a.click();
+                  
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 100);
+      }
     </script>
-
-    <!-- Edit-Modal -->
-    <!-- <div id="editModal" class="edit-modal">
-      <div class="edit-modal-content">
-        <h3>Element bearbeiten</h3>
-        <div class="form-group">
-          <label for="editType">Typ:</label>
-          <select id="editType">
-            <option value="attribute">Attribut</option>
-            <option value="method">Methode</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="editVisibility">Sichtbarkeit:</label>
-          <select id="editVisibility">
-            <option value="public">Public (+)</option>
-            <option value="private">Private (-)</option>
-            <option value="protected">Protected (#)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="editName">Name:</label>
-          <input type="text" id="editName" />
-        </div>
-        <div class="form-group">
-          <label for="editDatatype">Datentyp:</label>
-          <input type="text" id="editDatatype" placeholder="z.B. string, int" />
-        </div>
-        <div class="edit-modal-buttons">
-          <button id="deleteBtn" class="btn-delete">Löschen</button>
-          <button id="cancelBtn" class="btn-cancel">Abbrechen</button>
-          <button id="saveBtn" class="btn-save">Speichern</button>
-        </div>
-      </div>
-    </div> -->
-
-    <!-- 🔹 PyScript-Konfiguration -->
-    <py-config type="json">
-      {
-        "runtimes": [{
-          "name": "pyodide",
-          "lang": "python",
-          "src": "vendor/pyodide/pyodide.js",
-          "indexURL": "vendor/pyodide/"
-        }],
-        "packages": [],
-        "paths": ["./src"]
-      }
-    </py-config>
-
-    <!-- 🔹 Lade die UI-Logik（Python 里调用 Mermaid 渲染） -->
-    <py-script src="src/ui.py"></py-script>
-
   </body>
 </html>
