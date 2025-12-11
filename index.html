@@ -163,8 +163,8 @@
         */
           
       .uml-class-header {
-        background-color: #3498db;
-        color: white;
+        /*background-color: #3498db;
+        color: white;*/
         padding: 10px;
         border-radius: 5px;
         margin-bottom: 10px;
@@ -198,15 +198,17 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         
-        /* 输入框样式 */
+        /* 输入框样式 
         box-sizing: border-box;
         padding: 4px 8px;
         border: 1px solid #ccc;
         border-radius: 3px;
+        */
       }
           
       .uml-item:hover {
         background-color: #e8f4fc;
+        
       }
           
       .uml-item input {
@@ -225,18 +227,19 @@
       }
           
       .add-btn {
-        background-color: #2ecc71;
-        color: white;
-        border: none;
-        padding: 8px 15px;
-        border-radius: 5px;
-        cursor: pointer;
-        margin-top: 10px;
-        transition: background-color 0.3s;
+        /*background-color: #2ecc71 !important; */
+        color: white !important;
+        border: none !important;
+        padding: 8px 15px !important;
+        border-radius: 5px !important;
+        cursor: pointer !important;
+        margin-top: 10px !important;
+        margin-right: 1px !important;
+        transition: background-color 0.3s !important;
       }
           
       .add-btn:hover {
-        background-color: #27ae60;
+        background-color: #27ae60 !important;
       }
           
       .code-container {
@@ -375,21 +378,23 @@
           id: 1,
           name: "Person",
           attributes: [
-            { id: 1, name: "name", type: "str" },
-            { id: 2, name: "age", type: "int" },
-            { id: 3, name: "email", type: "str" }
+            { id: 1, attr: "name: str" },
+            { id: 2, attr: "+ age: int" },
+            { id: 3, attr: "+ email: str" }
           ],
           methods: [
-            { id: 1, name: "get_name", returnType: "str" },
-            { id: 2, name: "set_age", returnType: "", parameters: "age: int" },
-            { id: 3, name: "send_email", returnType: "bool", parameters: "message: str" }
+            { id: 1, methode: "- get_name(): str" },
+            { id: 2, methode: "- set_age(age: int)"},
+            { id: 3, methode: "- send_email(message: str): bool"}
           ]
         }
       ];
 
-      let nextClassId = 2;
+      //let nextClassId = 2;
       let nextAttributeId = 4;
       let nextMethodId = 4;
+      let längsteWort = 0;
+      let wortSize = 8; //每个字母大概占8px宽度
 
       // Initialize the application
       document.addEventListener('DOMContentLoaded', function() {
@@ -418,20 +423,25 @@
               <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname">
             </div>
             <div class="uml-class-attributes">
+
+              之后删除
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <h4>Attribute:</h4>
                 <button class="add-btn add-attr" data-class-id="${umlClass.id}">+ Attribut hinzufügen</button>
               </div>
+
               <div class="attributes-list" data-class-id="${umlClass.id}">
-                ${umlClass.attributes.map(attr => `
+                ${umlClass.attributes.map(attri => `
                   <div class="uml-item">
-                    <input type="text" value="${attr.name}" data-class-id="${umlClass.id}" data-attr-id="${attr.id}" data-field="name" placeholder="Attributname">
-                    <span>:</span>
-                    <input type="text" value="${attr.type}" data-class-id="${umlClass.id}" data-attr-id="${attr.id}" data-field="type" placeholder="Typ">
-                    <button class="remove-attr" data-class-id="${umlClass.id}" data-attr-id="${attr.id}">×</button>
+                    <input type="text" value="${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="Attributname:Datentyp" placeholder="+/-/# Attributname:Datentyp">
+                    <button class="remove-attr" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">×</button>
+                    <button class="add-btn getter-setter" data-class-id="" style="background: #00000033">get</button>
+                    <button class="add-btn getter-setter" data-class-id="" style="background: #00000033">set</button>
                   </div>
                 `).join('')}
               </div>
+              
+              删除
               <div class= "controls" id = "selectElement"> 
                 <div class="item-selection">
                   <select id="itemSelector">
@@ -443,7 +453,10 @@
                 <button class="add-btn getter-setter" data-class-id="">setter</button>
               </div>
             </div>
+
             <div class="uml-class-methods">
+
+              之后删除
               <div style="display: flex; align-items: center; justify-content: space-between;">
                 <h4>Methoden:</h4>
                 <button class="add-btn add-method" data-class-id="${umlClass.id}">+ Methode hinzufügen</button>
@@ -452,18 +465,31 @@
               <div class="methods-list" data-class-id="${umlClass.id}">
                 ${umlClass.methods.map(method => `
                   <div class="uml-item">
-                    <input type="text" value="${method.name}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="name" placeholder="Methodenname">
-                    <span>(</span>
-                    <input type="text" value="${method.parameters || ''}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="parameters" placeholder="Parameter">
-                    <span>)</span>
-                    <span>:</span>
-                    <input type="text" value="${method.returnType}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="returnType" placeholder="Rückgabetyp">
+                    <input type="text" value="${method.methode}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="methode" placeholder="Methodenname(Parameter):Rückgabetyp">
                     <button class="remove-method" data-class-id="${umlClass.id}" data-method-id="${method.id}">×</button>
                   </div>
                 `).join('')}
               </div>
             </div>
           `;
+
+          umlClasses.forEach(umlClass => {
+            let currentlänge = 0;
+            umlClass.attributes.forEach(attri => {
+              currentlänge = attri.attr.length;
+              if( currentlänge> längsteWort){
+                längsteWort = currentlänge;
+              }
+            });
+
+            umlClass.methods.forEach(method => {
+              currentlänge = method.methode.length;
+              
+              if( currentlänge > längsteWort){
+                längsteWort = currentlänge;
+              }
+            });
+          });
           //Klasse entfernen 可以加在上面的绿色那儿<button class="btn btn-danger remove-class" data-class-id="${umlClass.id}">Klasse entfernen</button>
           umlDiagram.appendChild(classElement);
         });
@@ -583,8 +609,7 @@
         if (umlClass) {
           umlClass.attributes.push({
             id: nextAttributeId++,
-            name: "",
-            type: ""
+            attr: ""
           });
           renderUmlDiagram();
           generateCode();
@@ -597,8 +622,7 @@
         if (umlClass) {
           umlClass.methods.push({
             id: nextMethodId++,
-            name: "",
-            returnType: ""
+            methode: ""
           });
           renderUmlDiagram();
           generateCode();
@@ -814,8 +838,8 @@
         </style>`;
                 
         // UML的表格大小和位置
-        const classWidth = 70;
-        const classHeight = 105;
+        const classWidth = 70 + längsteWort * wortSize; //根据最长的单词动态调整宽度
+        const classHeight = 80 + (nextAttributeId -1)*15 + (nextMethodId -1)*15; //根据attribute和method的数量动态调整高度
         //两个表格之间的间距
         const classSpacing = 30;
         const startX = 20;
@@ -852,8 +876,9 @@
             svgContent += `<text x="${x + 15}" y="${methodY}" class="method-text">+ ${method.name}${params}: ${method.returnType}</text>`;
           });
                     
-          // Separators
-          svgContent += `<line x1="${x}" y1="${y + 30}" x2="${x + classWidth}" y2="${y + 30}" class="separator" />`;
+          // Separators 边框线条位置
+          svgContent += `<line x1="${x}" y1="${y}" x2="${x + classWidth}" y2="${y}" class="separator" />`;
+          // attr和method之间的分割线
           svgContent += `<line x1="${x}" y1="${attrY + 5}" x2="${x + classWidth}" y2="${attrY + 5}" class="separator" />`;
         });
                 
