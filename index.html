@@ -148,10 +148,13 @@
       }
           
       .uml-class {
+        /*
         background-color: #f8f9fa;
         border: 2px solid #3498db;
         border-radius: 8px;
         padding: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        */
         transition: all 0.3s ease;
         cursor: move;
       }
@@ -165,16 +168,17 @@
       .uml-class-header {
         /*background-color: #3498db;
         color: white;*/
+        border: #3498db 2px solid;
         padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 10px;
         text-align: center;
         font-weight: bold;
       }
 
       /*Attribute 和 Methode 以及 Methode 和 Klasse entfernen 的 div box之间的距离*/
       .uml-class-attributes, .uml-class-methods {
-        margin-bottom: 5px;
+        border-top: none !important;
+        border: #3498db 2px solid;
+        padding: 10px;
       }
           
       .uml-item {
@@ -335,6 +339,13 @@
         border-radius: 6px;
         width: 180px;
       }
+      
+      /*分割线*/
+      .separator { 
+        stroke: #3498db; 
+        stroke-width: 1; 
+
+      }
 
     </style>
   </head>
@@ -353,9 +364,9 @@
       </div>
       
       <div class="panels-container">
-            <div class="uml-diagram" id="umlDiagram">
-              <!-- UML classes will be dynamically added here -->
-            </div>
+        <div class="uml-diagram" id="umlDiagram">
+          <!-- UML classes will be dynamically added here -->
+        </div>
             
         <div class="panel code-panel" id="codePanel">
           <div class="panel-header">Generierter Python Code</div>
@@ -825,7 +836,16 @@
       function generateSvg(){
         const svgContainer = document.getElementById('svgContainer');
         svgContainer.style.visibility = "visible";
-        let svgContent = `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">`;
+        
+        // UML的表格大小和位置
+        const classWidth = 20 + längsteWort * wortSize; //根据最长的单词动态调整宽度
+        const classHeight = 80 + (nextAttributeId -1)*15 + (nextMethodId -1)*15; //根据attribute和method的数量动态调整高度
+        //两个表格之间的间距
+        const classSpacing = 30;
+        const startX = 20;
+        const startY = 0;
+
+        let svgContent = `<svg width= "${classWidth}+1" height=${classHeight} xmlns="http://www.w3.org/2000/svg">`;
                 
         // Add styles
         svgContent += `<style>
@@ -836,14 +856,6 @@
           .method-text { fill: #2c3e50; font-family: Arial, sans-serif; font-size: 12px; }
           .separator { stroke: #3498db; stroke-width: 1; }
         </style>`;
-                
-        // UML的表格大小和位置
-        const classWidth = 70 + längsteWort * wortSize; //根据最长的单词动态调整宽度
-        const classHeight = 80 + (nextAttributeId -1)*15 + (nextMethodId -1)*15; //根据attribute和method的数量动态调整高度
-        //两个表格之间的间距
-        const classSpacing = 30;
-        const startX = 20;
-        const startY = 0;
                 
         // Draw each class
         umlClasses.forEach((umlClass, index) => {
@@ -861,9 +873,9 @@
           let attrY = y + 50;
           svgContent += `<text x="${x + 10}" y="${attrY}" class="attr-text">Attribute:</text>`;
                     
-          umlClass.attributes.forEach(attr => {
+          umlClass.attributes.forEach(attri => {
             attrY += 15;
-            svgContent += `<text x="${x + 15}" y="${attrY}" class="attr-text">- ${attr.name}: ${attr.type}</text>`;
+            svgContent += `<text x="${x + 15}" y="${attrY}" class="attr-text">- ${attri.attr}</text>`;
           });
                     
           // Methods section
@@ -872,10 +884,9 @@
                     
           umlClass.methods.forEach(method => {
             methodY += 15;
-            const params = method.parameters ? `(${method.parameters})` : '()';
-            svgContent += `<text x="${x + 15}" y="${methodY}" class="method-text">+ ${method.name}${params}: ${method.returnType}</text>`;
+            svgContent += `<text x="${x + 15}" y="${methodY}" class="method-text">+ ${method.methode}</text>`;
           });
-                    
+          
           // Separators 边框线条位置
           svgContent += `<line x1="${x}" y1="${y}" x2="${x + classWidth}" y2="${y}" class="separator" />`;
           // attr和method之间的分割线
