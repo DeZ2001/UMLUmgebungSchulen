@@ -172,6 +172,10 @@
         padding: 10px;
         text-align: center;
         font-weight: bold;
+        display: flex; 
+        align-items: center; 
+        align-content: space-between;
+        gap: 10px;
       }
 
       /*Attribute 和 Methode 以及 Methode 和 Klasse entfernen 的 div box之间的距离*/
@@ -431,6 +435,7 @@
           // UML里面的填充内容
           classElement.innerHTML = `
             <div class="uml-class-header">
+              <h4>Klassenname:</h4>
               <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname">
             </div>
             <div class="uml-class-attributes">
