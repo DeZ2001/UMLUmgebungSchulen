@@ -21,6 +21,7 @@
         padding: 0;
         box-sizing: border-box;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 14px;
       }
           
       body {
@@ -168,6 +169,7 @@
       .uml-class-header {
         /*background-color: #3498db;
         color: white;*/
+        background-color: #f5f7fa;
         border: #3498db 2px solid;
         padding: 10px;
         text-align: center;
@@ -180,6 +182,7 @@
 
       /*Attribute 和 Methode 以及 Methode 和 Klasse entfernen 的 div box之间的距离*/
       .uml-class-attributes, .uml-class-methods {
+        background-color: #f5f7fa;
         border-top: none !important;
         border: #3498db 2px solid;
         padding: 10px;
@@ -214,10 +217,11 @@
         */
       }
           
-      .uml-item:hover {
+      /*.uml-item:hover {
         background-color: #e8f4fc;
         
       }
+      */
           
       .uml-item input {
         flex: 1;
@@ -238,10 +242,10 @@
         /*background-color: #2ecc71 !important; */
         color: white !important;
         border: none !important;
-        padding: 8px 15px !important;
+        padding: 5px 5px !important;
         border-radius: 5px !important;
         cursor: pointer !important;
-        margin-top: 10px !important;
+        margin-top: 3px !important;
         margin-right: 1px !important;
         transition: background-color 0.3s !important;
       }
@@ -436,7 +440,7 @@
           classElement.innerHTML = `
             <div class="uml-class-header">
               <h4>Klassenname:</h4>
-              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname">
+              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname" style="flex: 1;">
             </div>
             <div class="uml-class-attributes">
 
@@ -750,14 +754,28 @@
             // Add parameters for attributes
             umlClass.attributes.forEach(attr => {
               //const beispielwert = getValueForType(attr.type);
-              code += `, ${attr.name}: ${attr.type}`;
+              let attribute = attr.attr;
+              const [attrName, attrType] = attribute.split(':').map(a => a.trim());
+              attrName.split(' ').forEach(namePart => {
+                if (namePart === '+' || namePart === '-' || namePart === '#') {
+                  attribute = attribute.replace(namePart, '').trim();
+                }
+              });
+              code += `, ${attribute}`;
             });
                         
             code += `):</div>`;
                         
             // Initialize attributes in constructor
             umlClass.attributes.forEach(attr => {
-              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">self</span>.<span class="code-attribute">${attr.name}</span> = ${attr.name}</div>`;
+              let attribute = attr.attr;
+              let attrName;
+              if (attribute.charAt(0) === '+' || attribute.charAt(0) === '-' || attribute.charAt(0) === '#') {
+                attribute = attribute.replace(attribute.charAt(0), '').trim();
+              }
+              [attrName, attrType] = attribute.split(':').map(a => a.trim());
+              let value = getValueForType(attrType);
+              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">self</span>.<span class="code-attribute">${attrName} = ${value}</div>`;
             });
           } 
           else {
@@ -766,22 +784,29 @@
           }
                     
           code += `<div class="code-line"></div>`;
-                    
-          // Methods
+          
+          // Methods 还要改
           umlClass.methods.forEach(method => {
-            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">${method.name}</span>(<span class="code-keyword">self</span>`;
-                        
-            // Add method parameters
-            if (method.parameters) {
-              const params = method.parameters.split(',').map(p => p.trim());
-              params.forEach(param => {
-                const [paramName, paramType] = param.split(':').map(p => p.trim());
-                code += `, ${paramName}: ${paramType}`;
-              });
+            let methodename = "";
+            if(method.methode.charAt(0) === '+' || method.methode.charAt(0) === '-' || method.methode.charAt(0) === '#'){
+              methodename = method.methode.replace(method.methode.charAt(0), '').trim();
+
             }
+            methodename = methodename.split('(')[0].trim();
+            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">${methodename}</span>(<span class="code-keyword">self, </span>`;
+            
+            let parametersPart = method.methode.split('(')[1].split(')')[0].trim();
+            parametersPart = parametersPart === "" ? [] : parametersPart.split(',');
+            parametersPart.forEach(param => {
+              const [paramName, ] = param.split(':').map(p => p.trim());
+              if(parametersPart.indexOf(param) > 0){
+                code += `, `;
+              }
+              code += `${paramName}</span>`;
+            });
                     
             code += `):</div>`;
-            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># TODO: Implement ${method.name} method</span></div>`;
+            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># TODO: Implement ${methodename} method</span></div>`;
                       
             // Add return statement based on return type
             if (method.returnType !== 'void') {
