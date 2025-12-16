@@ -21,7 +21,7 @@
         padding: 0;
         box-sizing: border-box;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 14px;
+        font-size: 15px;
       }
           
       body {
@@ -129,10 +129,11 @@
         overflow: auto;
       }
 
-      /* code 左侧面板样式 */
+      /* code 左侧面板样式 
       .code-panel {
         border-left: 5px solid #e74c3c;
       }
+      */
           
       .collapsed {
         flex: 0;
@@ -141,7 +142,7 @@
       }
           
       .uml-diagram {
-        width: 350px;
+        width: 400px;
         height: auto;
         display: flex;
         flex-direction: column;
@@ -169,7 +170,7 @@
       .uml-class-header {
         /*background-color: #3498db;
         color: white;*/
-        background-color: #f5f7fa;
+        background-color: white;
         border: #3498db 2px solid;
         padding: 10px;
         text-align: center;
@@ -178,7 +179,7 @@
 
       /*Attribute 和 Methode 以及 Methode 和 Klasse entfernen 的 div box之间的距离*/
       .uml-class-attributes, .uml-class-methods {
-        background-color: #f5f7fa;
+        background-color: white;
         border-top: none !important;
         border: #3498db 2px solid;
         padding: 10px;
@@ -220,23 +221,28 @@
       */
           
       .uml-item input {
+        background-color: white;
         flex: 1;
         padding: 5px;
-        border: 1px solid #ddd;
+        border: 1px solid white;
         border-radius: 3px;
       }
           
       .uml-item button {
+        color: rgb(211, 211, 211);
         background: none;
         border: none;
         cursor: pointer;
         font-weight: bold;
       }
 
+      .uml-item button:hover {
+        color: #000000;
+      }
+
       .btn-small {
-        background-color: #f5f7fa;
-        color: rgb(211, 211, 211);
-        padding: 2px 2px!important;
+        background-color: white;
+        padding: 2px 2px !important;
         transition: all 0.3s ease;
       }
           
@@ -253,24 +259,21 @@
       }
           
       .add-btn:hover {
-        background-color: #27ae60 !important;
+        background-color: #c2c1c1 !important;
+        color: #000000 !important;
       }
           
       .code-container {
-        background-color: #d0f6d2;
-        color: #515050;
-        border-radius: 5px;
-        padding: 15px;
-        height: 100%;
-        overflow: auto;
-        font-family: 'Consolas', 'Monaco', monospace;
-        font-size: 14px;
-        line-height: 1.5;
+        counter-reset: line-number; /* 重置计数器 */
+        padding: 15px 0; /* 调整内边距 */
       }
           
       .code-line {
-        margin-bottom: 5px;
-        white-space: nowrap;
+        position: relative;
+        margin: 0;
+        padding: 0 10px;
+        white-space: pre-wrap; /* 改为 pre-wrap 以支持换行 */
+        min-height: 1.5em; /* 确保每行有最小高度 */
       }
           
       .code-keyword {
@@ -350,12 +353,37 @@
         width: 180px;
       }
       
-      /*分割线*/
-      .separator { 
-        stroke: #3498db; 
-        stroke-width: 1; 
-
+      /* 带行号的代码容器 */
+      .code-with-line-numbers {
+        position: relative;
+        background-color: #d0f6d2;
+        border-radius: 5px;
+        padding-left: 60px; /* 为行号留出空间 */
+        height: 100%;
+        overflow: auto;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        line-height: 1.5;
       }
+
+      .code-line::before {
+        content: counter(line-number);
+        counter-increment: line-number; /* 计数器递增 - 关键！ */
+        position: absolute;
+        left: -40px;
+        width: 35px;
+        text-align: right;
+        color: #666;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        user-select: none;
+      }
+
+      /* 空行的处理 */
+    .code-line:empty::before {
+      content: counter(line-number);
+      /* 空行也需要递增计数器 */
+    }
 
     </style>
   </head>
@@ -383,6 +411,7 @@
           <div class="panel-header">Generierter Python Code</div>
           <div class="panel-content">
             <div class="code-container" id="codeContainer">
+              <div class = "code-with-line-numbers"></div>
               <!-- Generated code will appear here -->
             </div>
           </div>
@@ -419,7 +448,7 @@
       let nextMethodId = 4;
       let längsteWort = 0;
       let wortSize = 8; //每个字母大概占8px宽度
-
+      
       // Initialize the application
       document.addEventListener('DOMContentLoaded', function() {
         renderUmlDiagram();
@@ -437,14 +466,32 @@
       });
 
       function changeAccessModifier(){
-        const attributeId = this.getAttribute('data-attr-id');
-        const accessModButton = this;
-        // 重置所有按钮样式
-        document.querySelectorAll(`button[data-attr-id="${attributeId}"]`).forEach(btn => {
-          btn.style.color = "rgb(211, 211, 211)";
-          btn.style.border = "none";
-          btn.style.borderRadius = "0%";
+        document.querySelectorAll('.btn-small').forEach(btn => {
+          btn.addEventListener('click', updateButtonStyles);
         });
+        if(this.hasAttribute('data-attr-id')){
+          // Attribute 按钮
+          const attributeId = this.getAttribute('data-attr-id');
+          // 重置所有按钮样式
+          document.querySelectorAll(`button[data-attr-id="${attributeId}"]`).forEach(btn => {
+            btn.style.color = "rgb(211, 211, 211)";
+            btn.style.border = "none";
+            btn.style.borderRadius = "0%";
+          });
+        }
+        else if(this.hasAttribute('data-method-id')){
+          // Methode 按钮
+          const methodId = this.getAttribute('data-method-id');
+          // 重置所有按钮样式
+          document.querySelectorAll(`button[data-method-id="${methodId}"]`).forEach(btn => {
+            if(btn.id === "remove"){
+              return;
+            }
+            btn.style.color = "rgb(211, 211, 211)";
+            btn.style.border = "none";
+            btn.style.borderRadius = "0%";
+          });
+        }
 
         // 设置当前按钮样式
         if(this.id === "pri"){
@@ -464,6 +511,12 @@
         }
       }
 
+      function updateButtonStyles(){
+        document.querySelectorAll('.btn-small').forEach(btn => {
+          btn.addEventListener('click', changeAccessModifier);
+        });
+      }
+
       // Render UML diagram based on data
       function renderUmlDiagram() {
         const umlDiagram = document.getElementById('umlDiagram');
@@ -475,16 +528,9 @@
           // UML里面的填充内容
           classElement.innerHTML = `
             <div class="uml-class-header">
-              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname" >
+              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname" style="text-align: center; border: none; background-color: white;">
             </div>
             <div class="uml-class-attributes">
-
-              之后删除
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <h4>Attribute:</h4>
-                <button class="add-btn add-attr" data-class-id="${umlClass.id}">+ Attribut hinzufügen</button>
-              </div>
-
               <div class="attributes-list" data-class-id="${umlClass.id}">
                 ${umlClass.attributes.map(attri => `
                   <div class="uml-item">
@@ -492,30 +538,34 @@
                     <button class="btn-small" id="pub" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">-</button>
                     <button class="btn-small" id="pro" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">#</button>
                     <input type="text" value="${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="Attributname:Datentyp" placeholder="Attributname:Datentyp">
-                    <button class="remove-attr" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="color: #e74c3c;">×</button>
+                    <button class="remove-attr" id="remove" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">×</button>
                     <button class="add-btn getter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">g</button>
                     <button class="add-btn setter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">s</button>
                   </div>
                 `).join('')}
               </div>
+              <button class="add-attr add-btn" data-class-id="${umlClass.id}"
+                style="width:100%; 
+                background-color: white; 
+                color:#ddd !important;">+ </button>
             </div>
 
             <div class="uml-class-methods">
-
-              之后删除
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <h4>Methoden:</h4>
-                <button class="add-btn add-method" data-class-id="${umlClass.id}">+ Methode hinzufügen</button>
-              </div>
-          
               <div class="methods-list" data-class-id="${umlClass.id}">
                 ${umlClass.methods.map(method => `
                   <div class="uml-item">
+                    <button class="btn-small" id="pri" data-class-id="${umlClass.id}" data-method-id="${method.id}">+</button>
+                    <button class="btn-small" id="pub" data-class-id="${umlClass.id}" data-method-id="${method.id}">-</button>
+                    <button class="btn-small" id="pro" data-class-id="${umlClass.id}" data-method-id="${method.id}">#</button>
                     <input type="text" value="${method.methode}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="methode" placeholder="Methodenname(Parameter):Rückgabetyp">
-                    <button class="remove-method" data-class-id="${umlClass.id}" data-method-id="${method.id}" style="color: #e74c3c;">×</button>
+                    <button class="remove-method" id="remove" data-class-id="${umlClass.id}" data-method-id="${method.id}">×</button>
                   </div>
                 `).join('')}
               </div>
+              <button class="add-method add-btn" data-class-id="${umlClass.id}" 
+                style="width:100%; 
+                background-color: white; 
+                color:#ddd !important;">+ </button>
             </div>
           `;
 
@@ -767,82 +817,82 @@
       function generateCode() {
         const codeContainer = document.getElementById('codeContainer');
         let code = '';
-        let beispielwert;
+        let lineNumber = 1;
                 
         umlClasses.forEach(umlClass => {
           // Class definition
           code += `<div class="code-line"><span class="code-keyword">class</span> <span class="code-class">${umlClass.name}</span>:</div>`;
-                    
-          // Constructor
-          if (umlClass.attributes.length > 0) {
-            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>`;
-                          
-            // Add parameters for attributes
-            umlClass.attributes.forEach(attr => {
-              //const beispielwert = getValueForType(attr.type);
-              let attribute = attr.attr;
-              const [attrName, attrType] = attribute.split(':').map(a => a.trim());
-              attrName.split(' ').forEach(namePart => {
-                if (namePart === '+' || namePart === '-' || namePart === '#') {
-                  attribute = attribute.replace(namePart, '').trim();
-                }
-              });
-              code += `, ${attribute}`;
-            });
-                        
-            code += `):</div>`;
-                        
-            // Initialize attributes in constructor
-            umlClass.attributes.forEach(attr => {
-              let attribute = attr.attr;
-              let attrName;
-              if (attribute.charAt(0) === '+' || attribute.charAt(0) === '-' || attribute.charAt(0) === '#') {
-                attribute = attribute.replace(attribute.charAt(0), '').trim();
-              }
-              [attrName, attrType] = attribute.split(':').map(a => a.trim());
-              let value = getValueForType(attrType);
-              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">self</span>.<span class="code-attribute">${attrName} = ${value}</div>`;
-            });
-          } 
-          else {
-            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>):</div>`;
-            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">pass</span></div>`;
-          }
-                    
-          code += `<div class="code-line"></div>`;
           
-          // Methods 还要改
+          // Methods
           umlClass.methods.forEach(method => {
-            let methodename = "";
-            if(method.methode.charAt(0) === '+' || method.methode.charAt(0) === '-' || method.methode.charAt(0) === '#'){
-              methodename = method.methode.replace(method.methode.charAt(0), '').trim();
-
+            if(method.methode.trim() === ""){
+              return;
             }
-            methodename = methodename.split('(')[0].trim();
-            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">${methodename}</span>(<span class="code-keyword">self, </span>`;
-            
-            let parametersPart = method.methode.split('(')[1].split(')')[0].trim();
-            parametersPart = parametersPart === "" ? [] : parametersPart.split(',');
-            parametersPart.forEach(param => {
-              const [paramName, ] = param.split(':').map(p => p.trim());
-              if(parametersPart.indexOf(param) > 0){
-                code += `, `;
+            //constructor
+            if(method.methode.startsWith('c __init__')){
+              if (umlClass.attributes.length > 0) {
+                code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>`;
+                              
+                // Add parameters to constructor          
+                let parametersPart = method.methode.split('(')[1].split(')')[0].trim();
+                parametersPart = parametersPart === "" ? [] : parametersPart.split(',');
+                parametersPart.forEach(param => {
+                  const [paramName, ] = param.split(':').map(p => p.trim());
+                  if(parametersPart.indexOf(param) >= 0){
+                    code += `, `;
+                  }
+                  code += `${paramName}</span>`;
+                });
+                            
+                code += `):</div>`;
+                              
+                // Initialize attributes in constructor
+                umlClass.attributes.forEach(attr => {
+                  let attribute = attr.attr;
+                  let attrName;
+                  [attrName, attrType] = attribute.split(':').map(a => a.trim());
+                  let value = getValueForType(attrType);
+                  parametersPart.forEach(param => {
+                    const [paramName, ] = param.split(':').map(p => p.trim());
+                    if(paramName === attrName){
+                      value = paramName;
+                    }
+                  });
+                  code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">self</span>.<span class="code-attribute">${attrName} = ${value}</div>`;
+                });
               }
-              code += `${paramName}</span>`;
-            });
-                    
-            code += `):</div>`;
-            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># TODO: Implement ${methodename} method</span></div>`;
-                      
-            // Add return statement based on return type
-            if (method.returnType !== 'void') {
-              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> <span class="code-keyword">None</span> </div>`;
-            }
+              else {
+                code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>):</div>`;
+                code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">pass</span></div>`;
+              }
                         
-            code += `<div class="code-line"></div>`;
+              code += `<div class="code-line"></div>`;
+            }else{
+              let methodename = method.methode.split('(')[0].trim();
+              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">${methodename}</span>(<span class="code-keyword">self, </span>`;
+              
+              let parametersPart = method.methode.split('(')[1].split(')')[0].trim();
+              parametersPart = parametersPart === "" ? [] : parametersPart.split(',');
+              parametersPart.forEach(param => {
+                const [paramName, ] = param.split(':').map(p => p.trim());
+                if(parametersPart.indexOf(param) > 0){
+                  code += `, `;
+                }
+                code += `${paramName}</span>`;
+              });
+                      
+              code += `):</div>`;
+              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># TODO: Implement ${methodename} method</span></div>`;
+                        
+              // Add return statement based on return type
+              if (method.returnType !== 'void') {
+                code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">return</span> <span class="code-keyword">None</span> </div>`;
+              }
+                          
+              code += `<div class="code-line"></div>`;
+            }
           });
-                    
-          code += `<div class="code-line"></div>`;
+          
         });
         
         /*
@@ -866,6 +916,11 @@
         */
                 
         codeContainer.innerHTML = code;
+      }
+
+      //设置行号对应pythoncode每行
+      function code_line(){
+        
       }
 
       function getValueForType(type){
@@ -1010,6 +1065,10 @@
         }
 
         dragStart(e) {
+          // 在input框内点击时不开始拖动
+          if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') {
+            return;
+          }
           // 只有当点击本身时才开始拖动
           if (this.umlElement.contains(e.target)) {
             
