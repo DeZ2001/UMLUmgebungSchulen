@@ -245,6 +245,12 @@
         padding: 2px 2px !important;
         transition: all 0.3s ease;
       }
+
+      .access-btn.selected {
+        color: #000000;
+        border: 2px solid #ff0000;
+        border-radius: 50%;
+      }
           
       .add-btn {
         /*background-color: #2ecc71 !important; */
@@ -430,14 +436,14 @@
           id: 1,
           name: "Person",
           attributes: [
-            { id: 1, attr: "name: str" },
-            { id: 2, attr: "age: int" },
-            { id: 3, attr: "email: str" }
+            { id: 1, attr: "name: str", access: null },
+            { id: 2, attr: "age: int", access: null },
+            { id: 3, attr: "email: str", access: null }
           ],
           methods: [
-            { id: 1, methode: "c __init__(name: str, age: int, email: str)" },
-            { id: 2, methode: "get_name(): str" },
-            { id: 3, methode: "set_age(age: int)"},
+            { id: 1, methode: "c __init__(name: str, age: int, email: str)", access: null },
+            { id: 2, methode: "get_name(): str", access: null },
+            { id: 3, methode: "set_age(age: int)", access: null},
             
           ]
         }
@@ -460,61 +466,39 @@
         document.getElementById('toggleCode').addEventListener('click', toggleCodePanel);
         //document.getElementById('addClass').addEventListener('click', addNewClass);
         //document.getElementById('resetAll').addEventListener('click', resetAll);
-        document.getElementById('pri').addEventListener('click', changeAccessModifier);
-        document.getElementById('pub').addEventListener('click', changeAccessModifier);
-        document.getElementById('pro').addEventListener('click', changeAccessModifier);
       });
 
       function changeAccessModifier(){
-        document.querySelectorAll('.btn-small').forEach(btn => {
-          btn.addEventListener('click', updateButtonStyles);
-        });
+        const accessType = this.dataset.access;
+        const classId = parseInt(this.dataset.classId);
         if(this.hasAttribute('data-attr-id')){
           // Attribute 按钮
-          const attributeId = this.getAttribute('data-attr-id');
+          const attributeId = parseInt(this.getAttribute('data-attr-id'));
+          setAccessModifier(classId, attributeId, null, accessType);
           // 重置所有按钮样式
-          document.querySelectorAll(`button[data-attr-id="${attributeId}"]`).forEach(btn => {
-            btn.style.color = "rgb(211, 211, 211)";
-            btn.style.border = "none";
-            btn.style.borderRadius = "0%";
+          document.querySelectorAll(`button[data-attr-id="${attributeId}"].access-btn`).forEach(btn => {
+            btn.classList.remove('selected');
           });
         }
         else if(this.hasAttribute('data-method-id')){
           // Methode 按钮
-          const methodId = this.getAttribute('data-method-id');
+          const methodId = parseInt(this.getAttribute('data-method-id'));
+          setAccessModifier(classId, null, methodId, accessType);
           // 重置所有按钮样式
-          document.querySelectorAll(`button[data-method-id="${methodId}"]`).forEach(btn => {
+          document.querySelectorAll(`button[data-method-id="${methodId}"].access-btn`).forEach(btn => {
             if(btn.id === "remove"){
               return;
             }
-            btn.style.color = "rgb(211, 211, 211)";
-            btn.style.border = "none";
-            btn.style.borderRadius = "0%";
+            btn.classList.remove('selected');
           });
         }
 
         // 设置当前按钮样式
-        if(this.id === "pri"){
-          this.style.color = "#000000";
-          this.style.border = "2px solid #ff0000";
-          this.style.borderRadius = "50%";
-        }
-        else if(this.id === "pub"){
-          this.style.color = "#000000";
-          this.style.border = "2px solid #ff0000";
-          this.style.borderRadius = "50%";
-        }
-        else if(this.id === "pro"){
-          this.style.color = "#000000";
-          this.style.border = "2px solid #ff0000";
-          this.style.borderRadius = "50%";
-        }
+        this.classList.add('selected');
       }
 
-      function updateButtonStyles(){
-        document.querySelectorAll('.btn-small').forEach(btn => {
-          btn.addEventListener('click', changeAccessModifier);
-        });
+      function getSelected(current, expected){
+        return current === expected ? 'selected' : '';
       }
 
       // Render UML diagram based on data
@@ -534,10 +518,10 @@
               <div class="attributes-list" data-class-id="${umlClass.id}">
                 ${umlClass.attributes.map(attri => `
                   <div class="uml-item">
-                    <button class="btn-small" id="pri" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">+</button>
-                    <button class="btn-small" id="pub" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">-</button>
-                    <button class="btn-small" id="pro" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">#</button>
-                    <input type="text" value="${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="Attributname:Datentyp" placeholder="Attributname:Datentyp">
+                    <button class="btn-small access-btn ${getSelected(attri.access, 'pri')}" data-access="pri" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">+</button>
+                    <button class="btn-small access-btn ${getSelected(attri.access, 'pub')}" data-access="pub" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">-</button>
+                    <button class="btn-small access-btn ${getSelected(attri.access, 'pro')}" data-access="pro" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">#</button>
+                    <input type="text" value="${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="attr" placeholder="Attributname:Datentyp">
                     <button class="remove-attr" id="remove" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">×</button>
                     <button class="add-btn getter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">g</button>
                     <button class="add-btn setter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">s</button>
@@ -554,9 +538,9 @@
               <div class="methods-list" data-class-id="${umlClass.id}">
                 ${umlClass.methods.map(method => `
                   <div class="uml-item">
-                    <button class="btn-small" id="pri" data-class-id="${umlClass.id}" data-method-id="${method.id}">+</button>
-                    <button class="btn-small" id="pub" data-class-id="${umlClass.id}" data-method-id="${method.id}">-</button>
-                    <button class="btn-small" id="pro" data-class-id="${umlClass.id}" data-method-id="${method.id}">#</button>
+                    <button class="btn-small access-btn ${getSelected(method.access, 'pri')}" data-access="pri" data-class-id="${umlClass.id}" data-method-id="${method.id}">+</button>
+                    <button class="btn-small access-btn ${getSelected(method.access, 'pub')}" data-access="pub" data-class-id="${umlClass.id}" data-method-id="${method.id}">-</button>
+                    <button class="btn-small access-btn ${getSelected(method.access, 'pro')}" data-access="pro" data-class-id="${umlClass.id}" data-method-id="${method.id}">#</button>
                     <input type="text" value="${method.methode}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="methode" placeholder="Methodenname(Parameter):Rückgabetyp">
                     <button class="remove-method" id="remove" data-class-id="${umlClass.id}" data-method-id="${method.id}">×</button>
                   </div>
@@ -654,6 +638,11 @@
             removeMethod(classId, methodId);
           });
         });
+
+        // Access modifier buttons
+        document.querySelectorAll('.access-btn').forEach(button => {
+          button.addEventListener('click', changeAccessModifier);
+        });
             
         /*
         // Remove class buttons
@@ -699,13 +688,35 @@
         }
       }
 
+      function setAccessModifier(classId, attrId, methodId, accessType){
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if(!umlClass){
+          return;
+        }
+
+        if(attrId !== null && attrId !== undefined){
+          const attribute = umlClass.attributes.find(a => a.id === attrId);
+          if(attribute){
+            attribute.access = accessType;
+          }
+        }
+
+        if(methodId !== null && methodId !== undefined){
+          const method = umlClass.methods.find(m => m.id === methodId);
+          if(method){
+            method.access = accessType;
+          }
+        }
+      }
+
       // Add new attribute
       function addAttribute(classId) {
         const umlClass = umlClasses.find(c => c.id === classId);
         if (umlClass) {
           umlClass.attributes.push({
             id: nextAttributeId++,
-            attr: ""
+            attr: "",
+            access: null
           });
           renderUmlDiagram();
           generateCode();
@@ -718,7 +729,8 @@
         if (umlClass) {
           umlClass.methods.push({
             id: nextMethodId++,
-            methode: ""
+            methode: "",
+            access: null
           });
           renderUmlDiagram();
           generateCode();
