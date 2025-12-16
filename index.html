@@ -174,10 +174,6 @@
         padding: 10px;
         text-align: center;
         font-weight: bold;
-        display: flex; 
-        align-items: center; 
-        align-content: space-between;
-        gap: 10px;
       }
 
       /*Attribute 和 Methode 以及 Methode 和 Klasse entfernen 的 div box之间的距离*/
@@ -233,9 +229,15 @@
       .uml-item button {
         background: none;
         border: none;
-        color: #e74c3c;
         cursor: pointer;
         font-weight: bold;
+      }
+
+      .btn-small {
+        background-color: #f5f7fa;
+        color: rgb(211, 211, 211);
+        padding: 2px 2px!important;
+        transition: all 0.3s ease;
       }
           
       .add-btn {
@@ -362,7 +364,8 @@
       <div class="header">
         <h1>Dynamische UML-zu-Code-Generierung</h1>
           <div class="controls">
-            <button id="resetSvg" class="btn btn-svg">reset umlPosition</button>
+            <button id="resetSvg" class="btn btn-svg">↺ Position</button>
+            <!--generateSvg 改成bearbeiten button， 如果在bearbeiten modus 可以转为ansicht modus-->
             <button id="generateSvg" class="btn btn-svg">svg generieren</button>
             <!-- <button id="downloadSvg" class="btn btn-download">svg herunterladen</button> -->
             <button id="toggleCode" class="btn">Code-Fenster schließen</button>
@@ -385,9 +388,10 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="svg-container" id="svgContainer"> 
-      <!-- SVG 渲染图-->
+
+      <div class="uml-diagram" id="svgContainer" style="visibility: hidden; width: auto; height: auto;"> 
+        <!-- SVG 渲染图-->
+      </div>
     </div>
 
     <script>
@@ -398,13 +402,14 @@
           name: "Person",
           attributes: [
             { id: 1, attr: "name: str" },
-            { id: 2, attr: "+ age: int" },
-            { id: 3, attr: "+ email: str" }
+            { id: 2, attr: "age: int" },
+            { id: 3, attr: "email: str" }
           ],
           methods: [
-            { id: 1, methode: "- get_name(): str" },
-            { id: 2, methode: "- set_age(age: int)"},
-            { id: 3, methode: "- send_email(message: str): bool"}
+            { id: 1, methode: "c __init__(name: str, age: int, email: str)" },
+            { id: 2, methode: "get_name(): str" },
+            { id: 3, methode: "set_age(age: int)"},
+            
           ]
         }
       ];
@@ -426,7 +431,38 @@
         document.getElementById('toggleCode').addEventListener('click', toggleCodePanel);
         //document.getElementById('addClass').addEventListener('click', addNewClass);
         //document.getElementById('resetAll').addEventListener('click', resetAll);
+        document.getElementById('pri').addEventListener('click', changeAccessModifier);
+        document.getElementById('pub').addEventListener('click', changeAccessModifier);
+        document.getElementById('pro').addEventListener('click', changeAccessModifier);
       });
+
+      function changeAccessModifier(){
+        const attributeId = this.getAttribute('data-attr-id');
+        const accessModButton = this;
+        // 重置所有按钮样式
+        document.querySelectorAll(`button[data-attr-id="${attributeId}"]`).forEach(btn => {
+          btn.style.color = "rgb(211, 211, 211)";
+          btn.style.border = "none";
+          btn.style.borderRadius = "0%";
+        });
+
+        // 设置当前按钮样式
+        if(this.id === "pri"){
+          this.style.color = "#000000";
+          this.style.border = "2px solid #ff0000";
+          this.style.borderRadius = "50%";
+        }
+        else if(this.id === "pub"){
+          this.style.color = "#000000";
+          this.style.border = "2px solid #ff0000";
+          this.style.borderRadius = "50%";
+        }
+        else if(this.id === "pro"){
+          this.style.color = "#000000";
+          this.style.border = "2px solid #ff0000";
+          this.style.borderRadius = "50%";
+        }
+      }
 
       // Render UML diagram based on data
       function renderUmlDiagram() {
@@ -439,8 +475,7 @@
           // UML里面的填充内容
           classElement.innerHTML = `
             <div class="uml-class-header">
-              <h4>Klassenname:</h4>
-              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname" style="flex: 1;">
+              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname" >
             </div>
             <div class="uml-class-attributes">
 
@@ -453,24 +488,15 @@
               <div class="attributes-list" data-class-id="${umlClass.id}">
                 ${umlClass.attributes.map(attri => `
                   <div class="uml-item">
-                    <input type="text" value="${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="Attributname:Datentyp" placeholder="+/-/# Attributname:Datentyp">
-                    <button class="remove-attr" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">×</button>
-                    <button class="add-btn getter-setter" data-class-id="" style="background: #00000033">get</button>
-                    <button class="add-btn getter-setter" data-class-id="" style="background: #00000033">set</button>
+                    <button class="btn-small" id="pri" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">+</button>
+                    <button class="btn-small" id="pub" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">-</button>
+                    <button class="btn-small" id="pro" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">#</button>
+                    <input type="text" value="${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="Attributname:Datentyp" placeholder="Attributname:Datentyp">
+                    <button class="remove-attr" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="color: #e74c3c;">×</button>
+                    <button class="add-btn getter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">g</button>
+                    <button class="add-btn setter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">s</button>
                   </div>
                 `).join('')}
-              </div>
-              
-              删除
-              <div class= "controls" id = "selectElement"> 
-                <div class="item-selection">
-                  <select id="itemSelector">
-                    <option value="">Bitte Element wählen</option>
-                  </select>
-                </div>
-
-                <button class="add-btn getter-setter" data-class-id="">getter</button>
-                <button class="add-btn getter-setter" data-class-id="">setter</button>
               </div>
             </div>
 
@@ -486,7 +512,7 @@
                 ${umlClass.methods.map(method => `
                   <div class="uml-item">
                     <input type="text" value="${method.methode}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="methode" placeholder="Methodenname(Parameter):Rückgabetyp">
-                    <button class="remove-method" data-class-id="${umlClass.id}" data-method-id="${method.id}">×</button>
+                    <button class="remove-method" data-class-id="${umlClass.id}" data-method-id="${method.id}" style="color: #e74c3c;">×</button>
                   </div>
                 `).join('')}
               </div>
@@ -560,7 +586,7 @@
             addMethod(classId);
           });
         });
-              
+
         // Remove attribute buttons
         document.querySelectorAll('.remove-attr').forEach(button => {
           button.addEventListener('click', function() {
@@ -875,7 +901,7 @@
         const startX = 20;
         const startY = 0;
 
-        let svgContent = `<svg width= "${classWidth}+1" height=${classHeight} xmlns="http://www.w3.org/2000/svg">`;
+        let svgContent = `<svg width= "${classWidth}+1" height="${classHeight}"" xmlns="http://www.w3.org/2000/svg">`;
                 
         // Add styles
         svgContent += `<style>
@@ -886,7 +912,7 @@
           .method-text { fill: #2c3e50; font-family: Arial, sans-serif; font-size: 12px; }
           .separator { stroke: #3498db; stroke-width: 1; }
         </style>`;
-                
+
         // Draw each class
         umlClasses.forEach((umlClass, index) => {
           const x = startX + index * (classWidth + classSpacing);
@@ -905,7 +931,7 @@
                     
           umlClass.attributes.forEach(attri => {
             attrY += 15;
-            svgContent += `<text x="${x + 15}" y="${attrY}" class="attr-text">- ${attri.attr}</text>`;
+            svgContent += `<text x="${x + 15}" y="${attrY}" class="attr-text">${attri.attr}</text>`;
           });
                     
           // Methods section
@@ -914,7 +940,7 @@
                     
           umlClass.methods.forEach(method => {
             methodY += 15;
-            svgContent += `<text x="${x + 15}" y="${methodY}" class="method-text">+ ${method.methode}</text>`;
+            svgContent += `<text x="${x + 15}" y="${methodY}" class="method-text">${method.methode}</text>`;
           });
           
           // Separators 边框线条位置
@@ -984,11 +1010,6 @@
         }
 
         dragStart(e) {
-          //如果点在selectElement上，则不开始拖动
-          const selectElement = document.getElementById('selectElement');
-          if (selectElement.contains(e.target)) {
-            return;
-          }
           // 只有当点击本身时才开始拖动
           if (this.umlElement.contains(e.target)) {
             
