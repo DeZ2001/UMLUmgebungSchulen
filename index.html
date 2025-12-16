@@ -364,11 +364,11 @@
         position: relative;
         background-color: #d0f6d2;
         border-radius: 5px;
-        padding-left: 60px; /* 为行号留出空间 */
+        padding-left: 50px; /* 为行号留出空间 */
         height: 100%;
         overflow: auto;
         font-family: 'Consolas', 'Monaco', monospace;
-        font-size: 14px;
+        font-size: 12px;
         line-height: 1.5;
       }
 
@@ -849,11 +849,11 @@
                 let parametersPart = method.methode.split('(')[1].split(')')[0].trim();
                 parametersPart = parametersPart === "" ? [] : parametersPart.split(',');
                 parametersPart.forEach(param => {
-                  const [paramName, ] = param.split(':').map(p => p.trim());
+                  const [paramName, paramTyp] = param.split(':').map(p => p.trim());
                   if(parametersPart.indexOf(param) >= 0){
                     code += `, `;
                   }
-                  code += `${paramName}</span>`;
+                  code += `${paramName}:${paramTyp}</span>`;
                 });
                             
                 code += `):</div>`;
@@ -881,16 +881,16 @@
               code += `<div class="code-line"></div>`;
             }else{
               let methodename = method.methode.split('(')[0].trim();
-              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">${methodename}</span>(<span class="code-keyword">self, </span>`;
+              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">${methodename}</span>(<span class="code-keyword">self</span>`;
               
               let parametersPart = method.methode.split('(')[1].split(')')[0].trim();
               parametersPart = parametersPart === "" ? [] : parametersPart.split(',');
               parametersPart.forEach(param => {
-                const [paramName, ] = param.split(':').map(p => p.trim());
-                if(parametersPart.indexOf(param) > 0){
+                const [paramName, paramTyp] = param.split(':').map(p => p.trim());
+                if(parametersPart.indexOf(param) >= 0){
                   code += `, `;
                 }
-                code += `${paramName}</span>`;
+                code += `${paramName}:${paramTyp}</span>`;
               });
                       
               code += `):</div>`;
