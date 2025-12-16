@@ -142,11 +142,14 @@
       }
           
       .uml-diagram {
-        width: 400px;
+        width: auto;
+        max-width: 100%;
+        min-width: 320px;
         height: auto;
         display: flex;
         flex-direction: column;
         gap: 20px;
+        align-items: flex-start;
       }
           
       .uml-class {
@@ -202,9 +205,9 @@
         max-width: 100%; /* 不超过容器 */
         
         /* 文本溢出处理 */
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow: visible;
+        text-overflow: unset;
+        white-space: normal;
         
         /* 输入框样式 
         box-sizing: border-box;
@@ -501,6 +504,50 @@
         return current === expected ? 'selected' : '';
       }
 
+      const UI_FONT = "15px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+
+      function measureTextWidth(text = '') {
+        const canvas = measureTextWidth.canvas || (measureTextWidth.canvas = document.createElement('canvas'));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          return text.length * 8;
+        }
+        context.font = UI_FONT;
+        return context.measureText(text).width;
+      }
+
+      function calculateClassWidth(umlClass) {
+        const padding = 160; // account for buttons and padding
+        const minWidth = 320;
+        const umlDiagram = document.getElementById('umlDiagram');
+        const containerWidth = (umlDiagram?.parentElement?.clientWidth || umlDiagram?.clientWidth || window.innerWidth) - 40;
+        const maxWidth = Math.max(minWidth, containerWidth);
+
+        let maxTextWidth = measureTextWidth(umlClass.name);
+        umlClass.attributes.forEach(attr => {
+          maxTextWidth = Math.max(maxTextWidth, measureTextWidth(attr.attr));
+        });
+        umlClass.methods.forEach(method => {
+          maxTextWidth = Math.max(maxTextWidth, measureTextWidth(method.methode));
+        });
+
+        return Math.min(maxWidth, Math.max(minWidth, Math.ceil(maxTextWidth + padding)));
+      }
+
+      function resizeUmlClasses() {
+        const umlDiagram = document.getElementById('umlDiagram');
+        if (!umlDiagram) {
+          return;
+        }
+
+        umlClasses.forEach((umlClass, index) => {
+          const classElement = umlDiagram.children[index];
+          if (classElement) {
+            classElement.style.width = `${calculateClassWidth(umlClass)}px`;
+          }
+        });
+      }
+
       // Render UML diagram based on data
       function renderUmlDiagram() {
         const umlDiagram = document.getElementById('umlDiagram');
@@ -576,6 +623,7 @@
               
         // Add event listeners for dynamic elements
         addEventListeners();
+        resizeUmlClasses();
       }
 
       // Add event listeners for dynamic elements
@@ -661,6 +709,7 @@
         if (umlClass) {
           umlClass.name = newName;
           generateCode();
+          resizeUmlClasses();
         }
       }
 
@@ -672,6 +721,7 @@
           if (attribute) {
             attribute[field] = value;
             generateCode();
+            resizeUmlClasses();
           }
         }
       }
@@ -684,6 +734,7 @@
           if (method) {
             method[field] = value;
             generateCode();
+            resizeUmlClasses();
           }
         }
       }
