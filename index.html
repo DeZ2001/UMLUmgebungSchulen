@@ -75,7 +75,8 @@
         background-color: #2980b9;
         transform: translateY(-2px);
       }
-          
+      
+      /*
       .btn-danger {
         background-color: #e74c3c;
       }
@@ -83,6 +84,7 @@
       .btn-danger:hover {
         background-color: #c0392b;
       }
+      */
 
       .btn-svg{
         background-color: #2ecc71;
@@ -91,12 +93,14 @@
         background-color: #1cac58;
       }
 
+      /*
       .btn-download{
         background-color: #f39c12;
       }
       .btn-download:hover{
         background-color: #e18e08;
       }
+        */
           
       .panels-container {
         display: grid;
@@ -149,6 +153,7 @@
         display: flex;
         flex-direction: column;
         gap: 20px;
+        z-index: 100;
         align-items: flex-start;
       }
           
@@ -162,6 +167,7 @@
         */
         transition: all 0.3s ease;
         cursor: move;
+
       }
       /*
       .uml-class:hover {
@@ -367,7 +373,7 @@
         position: relative;
         background-color: #d0f6d2;
         border-radius: 5px;
-        padding-left: 50px; /* 为行号留出空间 */
+        padding-left: 30px; /* 为行号留出空间 */
         height: 100%;
         overflow: auto;
         font-family: 'Consolas', 'Monaco', monospace;
@@ -403,7 +409,7 @@
           <div class="controls">
             <button id="resetSvg" class="btn btn-svg">↺ Position</button>
             <!--generateSvg 改成bearbeiten button， 如果在bearbeiten modus 可以转为ansicht modus-->
-            <button id="generateSvg" class="btn btn-svg">svg generieren</button>
+            <button id="ansichtmodus" class="btn btn-svg">Ansicht</button>
             <!-- <button id="downloadSvg" class="btn btn-download">svg herunterladen</button> -->
             <button id="toggleCode" class="btn">Code-Fenster schließen</button>
             <!-- <button id="addClass" class="btn">Klasse hinzufügen</button> 
@@ -419,16 +425,13 @@
         <div class="panel code-panel" id="codePanel">
           <div class="panel-header">Generierter Python Code</div>
           <div class="panel-content">
-            <div class="code-container" id="codeContainer">
-              <div class = "code-with-line-numbers"></div>
-              <!-- Generated code will appear here -->
+            <div class = "code-with-line-numbers">
+              <div class="code-container" id="codeContainer">
+                <!-- Generated code will appear here -->
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="uml-diagram" id="svgContainer" style="visibility: hidden; width: auto; height: auto;"> 
-        <!-- SVG 渲染图-->
       </div>
     </div>
 
@@ -439,14 +442,14 @@
           id: 1,
           name: "Person",
           attributes: [
-            { id: 1, attr: "name: str", access: null },
-            { id: 2, attr: "age: int", access: null },
-            { id: 3, attr: "email: str", access: null }
+            { id: 1, attr: "name: str", access: "" },
+            { id: 2, attr: "age: int", access: "" },
+            { id: 3, attr: "email: str", access: "" }
           ],
           methods: [
-            { id: 1, methode: "c __init__(name: str, age: int, email: str)", access: null },
-            { id: 2, methode: "get_name(): str", access: null },
-            { id: 3, methode: "set_age(age: int)", access: null},
+            { id: 1, methode: "c __init__(name: str, age: int, email: str)", access: "" },
+            { id: 2, methode: "get_name(): str", access: "" },
+            { id: 3, methode: "set_age(age: int)", access: ""},
             
           ]
         }
@@ -455,8 +458,6 @@
       //let nextClassId = 2;
       let nextAttributeId = 4;
       let nextMethodId = 4;
-      let längsteWort = 0;
-      let wortSize = 8; //每个字母大概占8px宽度
       
       // Initialize the application
       document.addEventListener('DOMContentLoaded', function() {
@@ -464,7 +465,7 @@
         generateCode();
                 
         // Event listeners
-        document.getElementById('generateSvg').addEventListener('click', generateSvg);
+        document.getElementById('ansichtmodus').addEventListener('click', modusWechseln);
         //document.getElementById('downloadSvg').addEventListener('click', downloadSvg);
         document.getElementById('toggleCode').addEventListener('click', toggleCodePanel);
         //document.getElementById('addClass').addEventListener('click', addNewClass);
@@ -517,7 +518,7 @@
       }
 
       function calculateClassWidth(umlClass) {
-        const padding = 160; // account for buttons and padding
+        const padding = 80; // account for buttons and padding
         const minWidth = 320;
         const umlDiagram = document.getElementById('umlDiagram');
         const containerWidth = (umlDiagram?.parentElement?.clientWidth || umlDiagram?.clientWidth || window.innerWidth) - 40;
@@ -565,9 +566,9 @@
               <div class="attributes-list" data-class-id="${umlClass.id}">
                 ${umlClass.attributes.map(attri => `
                   <div class="uml-item">
-                    <button class="btn-small access-btn ${getSelected(attri.access, 'pri')}" data-access="pri" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">+</button>
-                    <button class="btn-small access-btn ${getSelected(attri.access, 'pub')}" data-access="pub" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">-</button>
-                    <button class="btn-small access-btn ${getSelected(attri.access, 'pro')}" data-access="pro" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">#</button>
+                    <button class="btn-small access-btn ${getSelected(attri.access, '+')}" data-access="+" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">+</button>
+                    <button class="btn-small access-btn ${getSelected(attri.access, '-')}" data-access="-" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">-</button>
+                    <button class="btn-small access-btn ${getSelected(attri.access, '#')}" data-access="#" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">#</button>
                     <input type="text" value="${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="attr" placeholder="Attributname:Datentyp">
                     <button class="remove-attr" id="remove" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">×</button>
                     <button class="add-btn getter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">g</button>
@@ -583,11 +584,16 @@
 
             <div class="uml-class-methods">
               <div class="methods-list" data-class-id="${umlClass.id}">
-                ${umlClass.methods.map(method => `
+                ${umlClass.methods.map(method=> `
                   <div class="uml-item">
-                    <button class="btn-small access-btn ${getSelected(method.access, 'pri')}" data-access="pri" data-class-id="${umlClass.id}" data-method-id="${method.id}">+</button>
-                    <button class="btn-small access-btn ${getSelected(method.access, 'pub')}" data-access="pub" data-class-id="${umlClass.id}" data-method-id="${method.id}">-</button>
-                    <button class="btn-small access-btn ${getSelected(method.access, 'pro')}" data-access="pro" data-class-id="${umlClass.id}" data-method-id="${method.id}">#</button>
+                    ${method.methode.startsWith('c __init__') === false ?`
+                      <button class="btn-small access-btn ${getSelected(method.access, '+')}" data-access="+" data-class-id="${umlClass.id}" data-method-id="${method.id}">+</button>
+                      <button class="btn-small access-btn ${getSelected(method.access, '-')}" data-access="-" data-class-id="${umlClass.id}" data-method-id="${method.id}">-</button>
+                      <button class="btn-small access-btn ${getSelected(method.access, '#')}" data-access="#" data-class-id="${umlClass.id}" data-method-id="${method.id}">#</button>
+                      `:`
+                      <!-- construktor不显示按钮 -->
+                      <div style="display: inline-block;"></div>
+                    `}
                     <input type="text" value="${method.methode}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="methode" placeholder="Methodenname(Parameter):Rückgabetyp">
                     <button class="remove-method" id="remove" data-class-id="${umlClass.id}" data-method-id="${method.id}">×</button>
                   </div>
@@ -599,24 +605,6 @@
                 color:#ddd !important;">+ </button>
             </div>
           `;
-
-          umlClasses.forEach(umlClass => {
-            let currentlänge = 0;
-            umlClass.attributes.forEach(attri => {
-              currentlänge = attri.attr.length;
-              if( currentlänge> längsteWort){
-                längsteWort = currentlänge;
-              }
-            });
-
-            umlClass.methods.forEach(method => {
-              currentlänge = method.methode.length;
-              
-              if( currentlänge > längsteWort){
-                längsteWort = currentlänge;
-              }
-            });
-          });
           //Klasse entfernen 可以加在上面的绿色那儿<button class="btn btn-danger remove-class" data-class-id="${umlClass.id}">Klasse entfernen</button>
           umlDiagram.appendChild(classElement);
         });
@@ -881,23 +869,20 @@
         const codeContainer = document.getElementById('codeContainer');
         let code = '';
         let lineNumber = 1;
+        let generateKon = false;
                 
         umlClasses.forEach(umlClass => {
           // Class definition
           code += `<div class="code-line"><span class="code-keyword">class</span> <span class="code-class">${umlClass.name}</span>:</div>`;
           
-          // Methods
-          umlClass.methods.forEach(method => {
-            if(method.methode.trim() === ""){
-              return;
-            }
-            //constructor
-            if(method.methode.startsWith('c __init__')){
+          //constructor
+          umlClass.methods.forEach(method1 => {
+            if(method1.methode.startsWith('c __init__')){
               if (umlClass.attributes.length > 0) {
                 code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>`;
-                              
+                                  
                 // Add parameters to constructor          
-                let parametersPart = method.methode.split('(')[1].split(')')[0].trim();
+                let parametersPart = method1.methode.split('(')[1].split(')')[0].trim();
                 parametersPart = parametersPart === "" ? [] : parametersPart.split(',');
                 parametersPart.forEach(param => {
                   const [paramName, paramTyp] = param.split(':').map(p => p.trim());
@@ -906,9 +891,9 @@
                   }
                   code += `${paramName}:${paramTyp}</span>`;
                 });
-                            
+                                
                 code += `):</div>`;
-                              
+                                  
                 // Initialize attributes in constructor
                 umlClass.attributes.forEach(attr => {
                   let attribute = attr.attr;
@@ -928,8 +913,40 @@
                 code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>):</div>`;
                 code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">pass</span></div>`;
               }
-                        
+                            
               code += `<div class="code-line"></div>`;
+              generateKon = true;
+            }
+          });
+
+          if(!generateKon){
+            code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self):</span>`;
+            
+            if (umlClass.attributes.length > 0) {
+              // Initialize attributes in constructor
+              umlClass.attributes.forEach(attr => {
+                let attribute = attr.attr;
+                let attrName;
+                [attrName, attrType] = attribute.split(':').map(a => a.trim());
+                let value = getValueForType(attrType);
+                code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">self</span>.<span class="code-attribute">${attrName} = ${value}</div>`;
+              });
+            }
+            else {
+              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">__init__</span>(<span class="code-keyword">self</span>):</div>`;
+              code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">pass</span></div>`;
+            }
+                            
+            code += `<div class="code-line"></div>`;
+          }
+
+          // Methods
+          umlClass.methods.forEach(method => {
+            if(method.methode.trim() === ""){
+              return;
+            }
+            if(method.methode.startsWith('c __init__')){
+              return;
             }else{
               let methodename = method.methode.split('(')[0].trim();
               code += `<div class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-keyword">def</span> <span class="code-function">${methodename}</span>(<span class="code-keyword">self</span>`;
@@ -1007,68 +1024,63 @@
         return typeMapping[type] || 'None';
       }
 
-      function generateSvg(){
-        const svgContainer = document.getElementById('svgContainer');
-        svgContainer.style.visibility = "visible";
-        
-        // UML的表格大小和位置
-        const classWidth = 20 + längsteWort * wortSize; //根据最长的单词动态调整宽度
-        const classHeight = 80 + (nextAttributeId -1)*15 + (nextMethodId -1)*15; //根据attribute和method的数量动态调整高度
-        //两个表格之间的间距
-        const classSpacing = 30;
-        const startX = 20;
-        const startY = 0;
+      function modusWechseln(){
+        const button = document.getElementById('ansichtmodus');
+        const umlPanel = document.getElementById('umlDiagram');
 
-        let svgContent = `<svg width= "${classWidth}+1" height="${classHeight}"" xmlns="http://www.w3.org/2000/svg">`;
-                
-        // Add styles
-        svgContent += `<style>
-          .class-rect { fill: #e8f4f8; stroke: #3498db; }
-          .class-header { fill: #3498db; }
-          .class-text { fill: white; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; }
-          .attr-text { fill: #2c3e50; font-family: Arial, sans-serif; font-size: 12px; }
-          .method-text { fill: #2c3e50; font-family: Arial, sans-serif; font-size: 12px; }
-          .separator { stroke: #3498db; stroke-width: 1; }
-        </style>`;
+        if(umlPanel.classList.contains('collapsed')){
+          umlPanel.classList.remove('collapsed');
+          button.textContent = 'ansicht';
+          renderUmlDiagram();
+        }
+        else{
+          umlPanel.classList.add('collapsed');
+          button.textContent = 'bearbeiten';
+          ansichtModus();
+        }
+      }
 
-        // Draw each class
-        umlClasses.forEach((umlClass, index) => {
-          const x = startX + index * (classWidth + classSpacing);
-          const y = startY;
-                  
-          // Class rectangle
-          svgContent += `<rect x="${x}" y="${y}" width="${classWidth}" height="${classHeight}" class="class-rect" rx="5" />`;
-                    
-          // Class header
-          svgContent += `<rect x="${x}" y="${y}" width="${classWidth}" height="30" class="class-header" />`;
-          svgContent += `<text x="${x + classWidth/2}" y="${y + 20}" text-anchor="middle" class="class-text">${umlClass.name}</text>`;
-                    
-          // Attributes section
-          let attrY = y + 50;
-          svgContent += `<text x="${x + 10}" y="${attrY}" class="attr-text">Attribute:</text>`;
-                    
-          umlClass.attributes.forEach(attri => {
-            attrY += 15;
-            svgContent += `<text x="${x + 15}" y="${attrY}" class="attr-text">${attri.attr}</text>`;
-          });
-                    
-          // Methods section
-          let methodY = attrY + 20;
-          svgContent += `<text x="${x + 10}" y="${methodY}" class="method-text">Methoden:</text>`;
-                    
-          umlClass.methods.forEach(method => {
-            methodY += 15;
-            svgContent += `<text x="${x + 15}" y="${methodY}" class="method-text">${method.methode}</text>`;
-          });
-          
-          // Separators 边框线条位置
-          svgContent += `<line x1="${x}" y1="${y}" x2="${x + classWidth}" y2="${y}" class="separator" />`;
-          // attr和method之间的分割线
-          svgContent += `<line x1="${x}" y1="${attrY + 5}" x2="${x + classWidth}" y2="${attrY + 5}" class="separator" />`;
+      function ansichtModus(){
+        const umlDiagram = document.getElementById('umlDiagram');
+        umlDiagram.innerHTML = '';        
+
+        umlClasses.forEach(umlClass => {
+          const classElement = document.createElement('div');
+          classElement.className = 'uml-class';
+          // UML里面的填充内容
+          classElement.innerHTML = `
+            <div class="uml-class-header">
+              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}" data-field="name" placeholder="Klassenname" 
+                readonly
+                style="text-align: center; border: none; background-color: white;">
+            </div>
+            <div class="uml-class-attributes">
+              <div class="attributes-list" data-class-id="${umlClass.id}">
+                ${umlClass.attributes.map(attri => `
+                  <div class="uml-item">
+                    <input type="text" value="${attri.access} ${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="attr" placeholder="Attributname:Datentyp" readonly>
+                    </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="uml-class-methods">
+              <div class="methods-list" data-class-id="${umlClass.id}">
+                ${umlClass.methods.map(method => `
+                  <div class="uml-item">
+                    <input type="text" value="${method.access} ${method.methode}" data-class-id="${umlClass.id}" data-method-id="${method.id}" data-field="methode" placeholder="Methodenname(Parameter):Rückgabetyp" readonly>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          //Klasse entfernen 可以加在上面的绿色那儿<button class="btn btn-danger remove-class" data-class-id="${umlClass.id}">Klasse entfernen</button>
+          umlDiagram.appendChild(classElement);
         });
-                
-        svgContent += `</svg>`;
-        svgContainer.innerHTML = svgContent;
+
+        // Add event listeners for dynamic elements
+        addEventListeners();
+        resizeUmlClasses();
       }
 
       function downloadSvg() {
