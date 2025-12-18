@@ -56,7 +56,7 @@
           
       .controls {
         display: flex;
-        gap: 10px;
+        gap: 5px;
       }
           
       .btn {
@@ -68,12 +68,12 @@
         cursor: pointer;
         font-weight: 500;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        /*box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);*/
       }
           
       .btn:hover {
         background-color: #2980b9;
-        transform: translateY(-2px);
+        /*transform: translateY(-2px);*/
       }
       
       /*
@@ -87,10 +87,11 @@
       */
 
       .btn-svg{
-        background-color: #2ecc71;
+        padding: 2px 2px !important;
+        background-color: #3498db;
       }
       .btn-svg:hover{
-        background-color: #1cac58;
+        background-color: #2980b9;
       }
 
       /*
@@ -400,6 +401,13 @@
       /* 空行也需要递增计数器 */
     }
 
+    /*Bilder button*/
+    .button-icon {
+      width: 20px;  /* Größe anpassen */
+      height: 20px; /* Größe anpassen */
+      vertical-align: middle;
+    }
+    
     </style>
   </head>
   <body>
@@ -407,11 +415,11 @@
       <div class="header">
         <h1>Dynamische UML-zu-Code-Generierung</h1>
           <div class="controls">
-            <button id="resetSvg" class="btn btn-svg">↺ Position</button>
+            <button id="resetSvg" class="btn btn-svg"><img src ="https://www.svgrepo.com/show/501336/reset.svg" alt= "resetPosition" class = "button-icon"></button>
             <!--generateSvg 改成bearbeiten button， 如果在bearbeiten modus 可以转为ansicht modus-->
-            <button id="ansichtmodus" class="btn btn-svg">Ansicht</button>
+            <button id="ansichtmodus" class="btn btn-svg"><img src ="https://www.svgrepo.com/show/532985/pencil-slash.svg" alt= "Ansicht" class = "button-icon"></button>
             <!-- <button id="downloadSvg" class="btn btn-download">svg herunterladen</button> -->
-            <button id="toggleCode" class="btn">Code-Fenster schließen</button>
+            <button id="toggleCode" class="btn btn-svg"><img src ="https://www.svgrepo.com/show/525814/code.svg" alt= "PythoenCode" class = "button-icon"></button>
             <!-- <button id="addClass" class="btn">Klasse hinzufügen</button> 
             <button id="resetAll" class="btn btn-danger">Alles zurücksetzen</button> -->
           </div>
@@ -560,7 +568,7 @@
           // UML里面的填充内容
           classElement.innerHTML = `
             <div class="uml-class-header">
-              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname" style="text-align: center; border: none; background-color: white;">
+              <input type="text" value="${umlClass.name}" data-class-id="${umlClass.id}"data-field="name" placeholder="Klassenname" style="text-align: center; border: none; background-color: white; width:90%">
             </div>
             <div class="uml-class-attributes">
               <div class="attributes-list" data-class-id="${umlClass.id}">
@@ -856,11 +864,11 @@
               
         if (codePanel.classList.contains('collapsed')) {
           codePanel.classList.remove('collapsed');
-          toggleButton.textContent = 'Code-Fenster schließen';
+          toggleButton.innerHTML = '<img src ="https://www.svgrepo.com/show/525814/code.svg" alt= "PythoenCode" class = "button-icon">';
         } 
         else {
           codePanel.classList.add('collapsed');
-          toggleButton.textContent = 'Code-Fenster anzeigen';
+          toggleButton.innerHTML = '<img src ="https://www.svgrepo.com/show/525814/code.svg" alt= "PythoenCode" class = "button-icon">';
         }
       }
         
@@ -1030,12 +1038,12 @@
 
         if(umlPanel.classList.contains('collapsed')){
           umlPanel.classList.remove('collapsed');
-          button.textContent = 'ansicht';
+          button.innerHTML = '<img src = "https://www.svgrepo.com/show/532985/pencil-slash.svg" alt= "Ansicht" class = "button-icon">';
           renderUmlDiagram();
         }
         else{
           umlPanel.classList.add('collapsed');
-          button.textContent = 'bearbeiten';
+          button.innerHTML = '<img src="https://www.svgrepo.com/show/532977/pencil.svg" alt="Bearbeiten" class="button-icon">';
           ansichtModus();
         }
       }
