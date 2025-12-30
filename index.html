@@ -94,6 +94,11 @@
         background-color: #2980b9;
       }
 
+      .btn-label {
+        padding: 8px 14px;
+        font-size: 14px;
+      }
+
       /*
       .btn-download{
         background-color: #f39c12;
@@ -406,6 +411,60 @@
         width: clamp(24px, 2vw, 40px);
         height: clamp(24px, 2vw, 40px)
     }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 12px;
+      width: min(720px, 92vw);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      background: #2c3e50;
+      color: #ffffff;
+      padding: 12px 16px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 16px;
+    }
+
+    .modal-body textarea {
+      width: 100%;
+      min-height: 260px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #d0d6dc;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 0 16px 16px;
+    }
     
     </style>
   </head>
@@ -415,6 +474,8 @@
         <h1>Dynamische UML-zu-Code-Generierung</h1>
           <div class="controls">
             <button id="resetSvg" class="btn btn-svg"><img src ="https://www.svgrepo.com/show/501336/reset.svg" alt= "resetPosition" class = "button-icon"></button>
+            <button id="exportJson" class="btn btn-label">Export</button>
+            <button id="importJson" class="btn btn-label">Import</button>
             <!--generateSvg 改成bearbeiten button， 如果在bearbeiten modus 可以转为ansicht modus-->
             <button id="ansichtmodus" class="btn btn-svg"><img src ="https://www.svgrepo.com/show/532985/pencil-slash.svg" alt= "Ansicht" class = "button-icon"></button>
             <!-- <button id="downloadSvg" class="btn btn-download">svg herunterladen</button> -->
@@ -438,6 +499,22 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="jsonModalOverlay" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="jsonModalTitle">
+        <div class="modal-header">
+          <div id="jsonModalTitle">Export JSON</div>
+          <button class="btn btn-svg" id="jsonModalClose">×</button>
+        </div>
+        <div class="modal-body">
+          <textarea id="jsonModalTextarea" spellcheck="false"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button id="jsonModalPrimary" class="btn">Copy</button>
+          <button id="jsonModalSecondary" class="btn btn-svg">Close</button>
         </div>
       </div>
     </div>
@@ -475,6 +552,8 @@
         document.getElementById('ansichtmodus').addEventListener('click', modusWechseln);
         //document.getElementById('downloadSvg').addEventListener('click', downloadSvg);
         document.getElementById('toggleCode').addEventListener('click', toggleCodePanel);
+        document.getElementById('exportJson').addEventListener('click', openExportModal);
+        document.getElementById('importJson').addEventListener('click', openImportModal);
         //document.getElementById('addClass').addEventListener('click', addNewClass);
         //document.getElementById('resetAll').addEventListener('click', resetAll);
       });
@@ -1252,6 +1331,134 @@
         };
       }
       document.addEventListener('DOMContentLoaded', addResetButton);
+
+      const jsonModalOverlay = document.getElementById('jsonModalOverlay');
+      const jsonModalTitle = document.getElementById('jsonModalTitle');
+      const jsonModalTextarea = document.getElementById('jsonModalTextarea');
+      const jsonModalPrimary = document.getElementById('jsonModalPrimary');
+      const jsonModalSecondary = document.getElementById('jsonModalSecondary');
+      const jsonModalClose = document.getElementById('jsonModalClose');
+
+      function openExportModal() {
+        jsonModalTitle.textContent = 'Export JSON';
+        jsonModalTextarea.value = JSON.stringify({ umlClasses }, null, 2);
+        jsonModalTextarea.readOnly = true;
+        jsonModalPrimary.textContent = 'Copy';
+        jsonModalSecondary.textContent = 'Close';
+        jsonModalPrimary.onclick = copyJsonToClipboard;
+        jsonModalSecondary.onclick = closeJsonModal;
+        jsonModalClose.onclick = closeJsonModal;
+        jsonModalOverlay.classList.add('active');
+        jsonModalOverlay.setAttribute('aria-hidden', 'false');
+        jsonModalTextarea.focus();
+        jsonModalTextarea.select();
+      }
+
+      function openImportModal() {
+        jsonModalTitle.textContent = 'Import JSON';
+        jsonModalTextarea.value = '';
+        jsonModalTextarea.readOnly = false;
+        jsonModalPrimary.textContent = 'Import';
+        jsonModalSecondary.textContent = 'Cancel';
+        jsonModalPrimary.onclick = importJsonState;
+        jsonModalSecondary.onclick = closeJsonModal;
+        jsonModalClose.onclick = closeJsonModal;
+        jsonModalOverlay.classList.add('active');
+        jsonModalOverlay.setAttribute('aria-hidden', 'false');
+        jsonModalTextarea.focus();
+      }
+
+      function closeJsonModal() {
+        jsonModalOverlay.classList.remove('active');
+        jsonModalOverlay.setAttribute('aria-hidden', 'true');
+      }
+
+      function copyJsonToClipboard() {
+        const text = jsonModalTextarea.value;
+        if (!text) {
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(closeJsonModal).catch(() => {
+            jsonModalTextarea.select();
+            document.execCommand('copy');
+            closeJsonModal();
+          });
+        } else {
+          jsonModalTextarea.select();
+          document.execCommand('copy');
+          closeJsonModal();
+        }
+      }
+
+      function normalizeImportedClasses(data) {
+        const incoming = Array.isArray(data) ? data : data?.umlClasses;
+        if (!Array.isArray(incoming)) {
+          throw new Error('Invalid JSON: expected an array or { "umlClasses": [...] }.');
+        }
+
+        return incoming.map((umlClass, index) => ({
+          id: Number.isFinite(umlClass.id) ? umlClass.id : index + 1,
+          name: typeof umlClass.name === 'string' ? umlClass.name : '',
+          attributes: Array.isArray(umlClass.attributes)
+            ? umlClass.attributes.map((attr, idx) => ({
+                id: Number.isFinite(attr.id) ? attr.id : idx + 1,
+                attr: typeof attr.attr === 'string' ? attr.attr : '',
+                access: typeof attr.access === 'string' ? attr.access : ''
+              }))
+            : [],
+          methods: Array.isArray(umlClass.methods)
+            ? umlClass.methods.map((method, idx) => ({
+                id: Number.isFinite(method.id) ? method.id : idx + 1,
+                methode: typeof method.methode === 'string' ? method.methode : '',
+                access: typeof method.access === 'string' ? method.access : ''
+              }))
+            : []
+        }));
+      }
+
+      function updateNextIdsFromState() {
+        let maxAttrId = 0;
+        let maxMethodId = 0;
+        umlClasses.forEach(umlClass => {
+          umlClass.attributes.forEach(attr => {
+            if (Number.isFinite(attr.id)) {
+              maxAttrId = Math.max(maxAttrId, attr.id);
+            }
+          });
+          umlClass.methods.forEach(method => {
+            if (Number.isFinite(method.id)) {
+              maxMethodId = Math.max(maxMethodId, method.id);
+            }
+          });
+        });
+        nextAttributeId = maxAttrId + 1;
+        nextMethodId = maxMethodId + 1;
+      }
+
+      function importJsonState() {
+        const raw = jsonModalTextarea.value.trim();
+        if (!raw) {
+          alert('Bitte JSON-Daten einfügen.');
+          return;
+        }
+
+        try {
+          const data = JSON.parse(raw);
+          umlClasses = normalizeImportedClasses(data);
+          updateNextIdsFromState();
+          renderUmlDiagram();
+          generateCode();
+          if (umlDragger) {
+            umlDragger.resetPosition();
+          } else {
+            localStorage.removeItem('umlPosition');
+          }
+          closeJsonModal();
+        } catch (error) {
+          alert('Ungültiges JSON-Format.');
+        }
+      }
 
     </script>
   </body>
