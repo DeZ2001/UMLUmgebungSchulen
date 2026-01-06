@@ -258,7 +258,7 @@
 
       .access-btn.selected {
         color: #000000;
-        border: 2px solid #ff0000;
+        border: 2px solid #000000;
         border-radius: 50%;
       }
           
@@ -407,6 +407,41 @@
       height: 20px; /* Größe anpassen */
       vertical-align: middle;
     }
+    /* Dieses Tooltip wird verwendet, weil das native Browser-Tooltip durch transform / overflow nicht angezeigt wird. */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    /* Tooltip-Box */
+    .tooltip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      color: white;
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 4px;
+      white-space: nowrap;
+      z-index: 99999;
+      pointer-events: none;
+    }
+    /* Kleiner Pfeil unter dem Tooltip */
+
+    .tooltip:hover::before {
+      content: "";
+      position: absolute;
+      top: -10px;              /* Position des Pfeils */
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px;       /* Größe des Pfeils */
+      border-style: solid;
+      border-color: black transparent transparent transparent;
+      z-index: 99999;
+    }
+
     
     </style>
   </head>
@@ -579,8 +614,8 @@
                     <button class="btn-small access-btn ${getSelected(attri.access, '#')}" data-access="#" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">#</button>
                     <input type="text" value="${attri.attr}" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" data-field="attr" placeholder="Attributname:Datentyp">
                     <button class="remove-attr" id="remove" data-class-id="${umlClass.id}" data-attr-id="${attri.id}">×</button>
-                    <button class="add-btn getter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">g</button>
-                    <button class="add-btn setter" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033">s</button>
+                    <button class="add-btn getter tooltip" data-tip="Getter-Methode erzeugen" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033" >g</button>
+                    <button class="add-btn setter tooltip" data-tip="Setter-Methode erzeugen" data-class-id="${umlClass.id}" data-attr-id="${attri.id}" style="background: #00000033" >s</button>
                   </div>
                 `).join('')}
               </div>
@@ -686,6 +721,23 @@
         // Access modifier buttons
         document.querySelectorAll('.access-btn').forEach(button => {
           button.addEventListener('click', changeAccessModifier);
+        });
+
+        // Getter buttons
+        document.querySelectorAll('.add-btn.getter').forEach(button => {
+          button.addEventListener('click', function () {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            const attrId = parseInt(this.getAttribute('data-attr-id'));
+            generateGetter(classId, attrId);
+          });
+        });
+        // Setter buttons
+        document.querySelectorAll('.add-btn.setter').forEach(button => {
+          button.addEventListener('click', function () {
+            const classId = parseInt(this.getAttribute('data-class-id'));
+            const attrId = parseInt(this.getAttribute('data-attr-id'));
+            generateSetter(classId, attrId);
+          });
         });
             
         /*
@@ -1253,6 +1305,55 @@
         };
       }
       document.addEventListener('DOMContentLoaded', addResetButton);
+
+      function generateGetter(classId, attrId) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (!umlClass) return;
+
+        const attr = umlClass.attributes.find(a => a.id === attrId);
+        if (!attr) return;
+
+        // 从 "age: int" 拆分 name 和 type
+        let [name, type] = attr.attr.split(':').map(s => s.trim());
+        const getterName = `get_${name}()`;
+
+        // 检查是否已经有 getter
+        const exists = umlClass.methods.some(m => m.methode.startsWith(`get_${name}(`));
+        if (exists) return;
+
+        umlClass.methods.push({
+            id: nextMethodId++,
+            methode: `${getterName}: ${type}`,
+            access: "+"
+        });
+
+        renderUmlDiagram();
+        generateCode();
+      }
+
+      function generateSetter(classId, attrId) {
+        const umlClass = umlClasses.find(c => c.id === classId);
+        if (!umlClass) return;
+
+        const attr = umlClass.attributes.find(a => a.id === attrId);
+        if (!attr) return;
+
+        let [name, type] = attr.attr.split(':').map(s => s.trim());
+        const setterName = `set_${name}`;
+
+        // 检查是否已经有 setter
+        const exists = umlClass.methods.some(m => m.methode.startsWith(`${setterName}(`));
+        if (exists) return;
+
+        umlClass.methods.push({
+            id: nextMethodId++,
+            methode: `${setterName}(${name}: ${type})`,
+            access: "+"
+        });
+
+        renderUmlDiagram();
+        generateCode();
+      }
 
     </script>
   </body>
