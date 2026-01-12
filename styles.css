@@ -1,0 +1,411 @@
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 15px;
+      }
+          
+      body {
+        background-color: #f5f7fa;
+        color: #333;
+        line-height: 1.6;
+      }
+          
+      .container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 20px;
+        gap: 20px;
+      }
+          
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: #2c3e50;
+        color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+          
+      .header h1 {
+        font-size: 1.8rem;
+        font-weight: 600;
+      }
+          
+      .controls {
+        display: flex;
+        gap: 5px;
+      }
+          
+      .btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        
+      }
+          
+      .btn:hover {
+        background-color: #2980b9;
+        
+      }
+      
+      
+
+      .btn-svg{
+        padding: 2px 2px !important;
+        background-color: #3498db;
+      }
+      .btn-svg:hover{
+        background-color: #2980b9;
+      }
+
+      .btn-label {
+        padding: 8px 14px;
+        font-size: 14px;
+      }
+
+      
+          
+      .panels-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        transition: all 0.3s ease;
+      }
+          
+      .panel {
+        flex: 1;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+      }
+          
+      .panel-header {
+        padding: 15px 20px;
+        background: #3498db;
+        color: white;
+        font-weight: 600;
+        font-size: 1.2rem;
+      }
+          
+      .panel-content {
+        padding: 20px;
+        overflow: auto;
+      }
+
+      
+          
+      .collapsed {
+        flex: 0;
+        width: 0;
+        overflow: hidden;
+      }
+          
+      .uml-diagram {
+        width: auto;
+        max-width: 100%;
+        min-width: 320px;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        z-index: 100;
+        align-items: flex-start;
+      }
+          
+      .uml-class {
+        
+        transition: all 0.3s ease;
+        cursor: move;
+
+      }
+      
+          
+      .uml-class-header {
+        
+        background-color: white;
+        border: #3498db 2px solid;
+        padding: 10px;
+        text-align: center;
+        font-weight: bold;
+      }
+
+      
+      .uml-class-attributes, .uml-class-methods {
+        background-color: white;
+        border-top: none !important;
+        border: #3498db 2px solid;
+        padding: 10px;
+      }
+          
+      .uml-item {
+        display: flex;
+        align-items: center;
+        padding: 1px;
+        border-radius: 3px;
+        min-width: 0;
+        width: 100%;
+        
+        transition: background-color 0.2s;
+      }
+
+      .uml-item input {
+        flex: 1; 
+        min-width: 0; 
+        max-width: 100%; 
+        
+        
+        overflow: visible;
+        text-overflow: unset;
+        white-space: normal;
+        
+        
+      }
+          
+      
+          
+      .uml-item input {
+        background-color: white;
+        flex: 1;
+        padding: 5px;
+        border: 1px solid white;
+        border-radius: 3px;
+      }
+          
+      .uml-item button {
+        color: rgb(211, 211, 211);
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .uml-item button:hover {
+        color: #000000;
+      }
+
+      .btn-small {
+        background-color: white;
+        padding: 2px 2px !important;
+        transition: all 0.3s ease;
+      }
+
+      .access-btn.selected {
+        color: #000000;
+        border: 2px solid #ff0000;
+        border-radius: 50%;
+      }
+          
+      .add-btn {
+        
+        color: white !important;
+        border: none !important;
+        padding: 5px 5px !important;
+        border-radius: 5px !important;
+        cursor: pointer !important;
+        margin-top: 3px !important;
+        margin-right: 1px !important;
+        transition: background-color 0.3s !important;
+      }
+          
+      .add-btn:hover {
+        background-color: #c2c1c1 !important;
+        color: #000000 !important;
+      }
+          
+      .code-container {
+        counter-reset: line-number; 
+        padding: 15px 0; 
+      }
+          
+      .code-line {
+        position: relative;
+        margin: 0;
+        padding: 0 10px;
+        white-space: pre-wrap; 
+        min-height: 1.5em; 
+      }
+          
+      .code-keyword {
+        color: #3498db;
+      }
+          
+      .code-function {
+        color: #e74c3c;
+      }
+          
+      .code-string {
+        color: #2ecc71;
+      }
+          
+      .code-comment {
+        color: #7f8c8d;
+      }
+          
+      .code-class {
+        color: #f39c12;
+      }
+          
+      .code-attribute {
+        color: #9b59b6;
+      }
+          
+      @media (max-width: 768px) {
+        .panels-container {
+          flex-direction: column;
+        }
+              
+        .panel {
+          min-height: 300px;
+        }
+              
+        .header {
+          flex-direction: column;
+          gap: 15px;
+        }
+              
+        .controls {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      
+      .svg-container {
+        width: 100%;
+        height: 400px;
+        position: relative;
+        overflow: scroll;
+      }
+
+      
+      #uml-class.dragging {
+        cursor: grabbing;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
+
+      
+      .uml-class:active {
+        cursor: grabbing;
+      }
+        
+      
+      .item-selection {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .item-selection select {
+        border: 2px solid #ddd;
+        padding: 8px 15px;
+        border-radius: 6px;
+        width: 180px;
+      }
+      
+      
+      .code-with-line-numbers {
+        position: relative;
+        background-color: #d0f6d2;
+        border-radius: 5px;
+        padding-left: 30px; 
+        height: 100%;
+        overflow: auto;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .code-line::before {
+        content: counter(line-number);
+        counter-increment: line-number; 
+        position: absolute;
+        left: -40px;
+        width: 35px;
+        text-align: right;
+        color: #666;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        user-select: none;
+      }
+
+      
+    .code-line:empty::before {
+      content: counter(line-number);
+      
+    }
+
+    
+    .button-icon {
+        width: clamp(24px, 2vw, 40px);
+        height: clamp(24px, 2vw, 40px)
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 12px;
+      width: min(720px, 92vw);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      background: #2c3e50;
+      color: #ffffff;
+      padding: 12px 16px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 16px;
+    }
+
+    .modal-body textarea {
+      width: 100%;
+      min-height: 260px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #d0d6dc;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 0 16px 16px;
+    }
+    
+    
