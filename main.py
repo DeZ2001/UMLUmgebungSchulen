@@ -590,11 +590,11 @@ def ansichtModus():
 
 
 def openExportModal(event=None):
-    jsonModalTitle.textContent = "Export JSON"
+    jsonModalTitle.textContent = "JSON exportieren"
     jsonModalTextarea.value = json.dumps({"umlClasses": umlClasses}, indent=2)
     jsonModalTextarea.readOnly = True
-    jsonModalPrimary.textContent = "Copy"
-    jsonModalSecondary.textContent = "Close"
+    jsonModalPrimary.textContent = "Kopieren"
+    jsonModalSecondary.textContent = "Schließen"
     set_onclick(jsonModalPrimary, copyJsonToClipboard)
     set_onclick(jsonModalSecondary, closeJsonModal)
     set_onclick(jsonModalClose, closeJsonModal)
@@ -605,11 +605,11 @@ def openExportModal(event=None):
 
 
 def openImportModal(event=None):
-    jsonModalTitle.textContent = "Import JSON"
+    jsonModalTitle.textContent = "JSON importieren"
     jsonModalTextarea.value = ""
     jsonModalTextarea.readOnly = False
-    jsonModalPrimary.textContent = "Import"
-    jsonModalSecondary.textContent = "Cancel"
+    jsonModalPrimary.textContent = "Importieren"
+    jsonModalSecondary.textContent = "Schließen"
     set_onclick(jsonModalPrimary, importJsonState)
     set_onclick(jsonModalSecondary, closeJsonModal)
     set_onclick(jsonModalClose, closeJsonModal)
@@ -633,7 +633,7 @@ def copyJsonToClipboard(event=None):
             closeJsonModal()
         def on_copy_error(e=None):
             jsonModalTextarea.select()
-            document.execCommand("copy")
+            document.execCommand("Kopieren")
             closeJsonModal()
         success_proxy = create_proxy(on_copy_success)
         error_proxy = create_proxy(on_copy_error)
@@ -642,14 +642,14 @@ def copyJsonToClipboard(event=None):
         promise.then(success_proxy).catch(error_proxy)
     else:
         jsonModalTextarea.select()
-        document.execCommand("copy")
+        document.execCommand("Kopieren")
         closeJsonModal()
 
 
 def normalizeImportedClasses(data):
     incoming = data if isinstance(data, list) else data.get("umlClasses")
     if not isinstance(incoming, list):
-        raise ValueError('Invalid JSON: expected an array or { "umlClasses": [...] }.')
+        raise ValueError('Ungültiges JSON: erwartet ein Array oder { "umlClasses": [...] }.')
 
     normalized = []
     for index, umlClass in enumerate(incoming):
