@@ -31,8 +31,10 @@ jsonModalOverlay = document.getElementById("jsonModalOverlay")
 jsonModalTitle = document.getElementById("jsonModalTitle")
 jsonModalTextarea = document.getElementById("jsonModalTextarea")
 jsonModalPrimary = document.getElementById("jsonModalPrimary")
+jsonModalTertiary = document.getElementById("jsonModalTertiary")
 jsonModalSecondary = document.getElementById("jsonModalSecondary")
 jsonModalClose = document.getElementById("jsonModalClose")
+jsonFileInput = document.getElementById("jsonFileInput")
 
 event_proxies = []
 
@@ -594,8 +596,10 @@ def openExportModal(event=None):
     jsonModalTextarea.value = json.dumps({"umlClasses": umlClasses}, indent=2)
     jsonModalTextarea.readOnly = True
     jsonModalPrimary.textContent = "Kopieren"
+    jsonModalTertiary.textContent = "Als JSON herunterladen"
     jsonModalSecondary.textContent = "Schließen"
     set_onclick(jsonModalPrimary, copyJsonToClipboard)
+    set_onclick(jsonModalTertiary, downloadJsonFromTextarea)
     set_onclick(jsonModalSecondary, closeJsonModal)
     set_onclick(jsonModalClose, closeJsonModal)
     jsonModalOverlay.classList.add("active")
@@ -609,8 +613,10 @@ def openImportModal(event=None):
     jsonModalTextarea.value = ""
     jsonModalTextarea.readOnly = False
     jsonModalPrimary.textContent = "Importieren"
+    jsonModalTertiary.textContent = "Als JSON hochladen"
     jsonModalSecondary.textContent = "Schließen"
     set_onclick(jsonModalPrimary, importJsonState)
+    set_onclick(jsonModalTertiary, triggerJsonFilePicker)
     set_onclick(jsonModalSecondary, closeJsonModal)
     set_onclick(jsonModalClose, closeJsonModal)
     jsonModalOverlay.classList.add("active")
@@ -644,6 +650,56 @@ def copyJsonToClipboard(event=None):
         jsonModalTextarea.select()
         document.execCommand("Kopieren")
         closeJsonModal()
+
+
+def downloadJsonFromTextarea(event=None):
+    text = jsonModalTextarea.value.strip()
+    if not text:
+        return
+    downloadJsonFile(text)
+
+
+def downloadJsonFile(text):
+    filename = "uml-classes.json"
+    blob = window.Blob.new([text], {"type": "application/json"})
+    url = window.URL.createObjectURL(blob)
+    link = document.createElement("a")
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+
+def triggerJsonFilePicker(event=None):
+    if jsonFileInput:
+        jsonFileInput.value = ""
+        jsonFileInput.click()
+
+
+def handleJsonFileInput(event=None):
+    files = jsonFileInput.files
+    if not files or files.length == 0:
+        return
+    file = files.item(0)
+    reader = window.FileReader.new()
+
+    def on_load(e=None):
+        jsonModalTextarea.value = reader.result
+        jsonModalTextarea.focus()
+        importJsonState()
+
+    def on_error(e=None):
+        window.alert("Datei konnte nicht gelesen werden.")
+
+    load_proxy = create_proxy(on_load)
+    error_proxy = create_proxy(on_error)
+    event_proxies.append(load_proxy)
+    event_proxies.append(error_proxy)
+    reader.addEventListener("load", load_proxy)
+    reader.addEventListener("error", error_proxy)
+    reader.readAsText(file)
 
 
 def normalizeImportedClasses(data):
@@ -729,6 +785,8 @@ def init_handlers():
         add_listener(document, "DOMContentLoaded", on_dom_content_loaded)
     else:
         on_dom_content_loaded()
+
+    add_listener(jsonFileInput, "change", handleJsonFileInput)
 
 
 init_handlers()

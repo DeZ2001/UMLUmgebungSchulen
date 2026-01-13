@@ -45,10 +45,12 @@
         </div>
         <div class="modal-actions">
           <button id="jsonModalPrimary" class="btn">Kopieren</button>
+          <button id="jsonModalTertiary" class="btn btn-label">Als JSON herunterladen</button>
           <button id="jsonModalSecondary" class="btn btn-svg">Schließen</button>
         </div>
       </div>
     </div>
+    <input id="jsonFileInput" type="file" accept="application/json,.json" style="display: none;">
 
     <py-script src="main.py"></py-script>
     <script src="drag.js"></script>
