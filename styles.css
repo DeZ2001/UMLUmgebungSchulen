@@ -45,7 +45,7 @@
         background-color: #3498db;
         color: white;
         border: none;
-        padding: 10px 20px;
+        padding: 10px 10px;
         border-radius: 5px;
         cursor: pointer;
         font-weight: 500;
@@ -58,23 +58,14 @@
         
       }
       
-      
-
       .btn-svg{
-        padding: 2px 2px !important;
+        padding: 2px 2px 0px 2px !important;
         background-color: #3498db;
       }
       .btn-svg:hover{
         background-color: #2980b9;
       }
-
-      .btn-label {
-        padding: 8px 14px;
-        font-size: 14px;
-      }
-
-      
-          
+   
       .panels-container {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -105,8 +96,6 @@
         padding: 20px;
         overflow: auto;
       }
-
-      
           
       .collapsed {
         flex: 0;
@@ -116,12 +105,10 @@
           
       .uml-diagram {
         width: auto;
-        max-width: 100%;
         min-width: 320px;
         height: auto;
         display: flex;
         flex-direction: column;
-        gap: 20px;
         z-index: 100;
         align-items: flex-start;
       }
@@ -172,11 +159,8 @@
         text-overflow: unset;
         white-space: normal;
         
-        
       }
-          
-      
-          
+
       .uml-item input {
         background-color: white;
         flex: 1;

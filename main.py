@@ -93,7 +93,7 @@ def measureTextWidth(text=""):
 
 def calculateClassWidth(umlClass):
     padding = 80
-    minWidth = 320
+    minWidth = 365
     umlDiagram = document.getElementById("umlDiagram")
     containerWidth = (
         (umlDiagram.parentElement.clientWidth if umlDiagram and umlDiagram.parentElement else None)
@@ -392,10 +392,8 @@ def toggleCodePanel(event=None):
     toggleButton = document.getElementById("toggleCode")
     if codePanel.classList.contains("collapsed"):
         codePanel.classList.remove("collapsed")
-        toggleButton.innerHTML = '<img src ="https://www.svgrepo.com/show/525814/code.svg" alt= "PythoenCode" class = "button-icon">'
     else:
         codePanel.classList.add("collapsed")
-        toggleButton.innerHTML = '<img src ="https://www.svgrepo.com/show/525814/code.svg" alt= "PythoenCode" class = "button-icon">'
 
 
 def getValueForType(type_value):
@@ -406,8 +404,8 @@ def getValueForType(type_value):
         "int": "0",
         "Float": "0.0",
         "float": "0.0",
-        "Boolean": "False",
-        "bool": "False",
+        "Boolean": "false",
+        "bool": "false",
         "List": "[]",
         "list": "[]",
         "Dict": "{}",
@@ -511,27 +509,40 @@ def generateCode():
                 code += f"{paramName}:{paramTyp}</span>"
 
             code += "):</div>"
-            code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-comment\"># TODO: Implement {methodename} method</span></div>"
-
-            if method.get("returnType") != "void":
-                code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\">None</span> </div>"
+            if(methodename.startswith("get_")):
+                attr_name = methodename[4:]
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name}</span></div>"
+            elif(methodename.startswith("set_")):
+                attr_name = methodename[4:]
+                param_name = parametersPart[0].split(":")[0].strip() if len(parametersPart) > 0 else "value"
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name} = {param_name}</span></div>"
+            else:
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-comment\"># TODO: Implement {methodename} method</span></div>"
+                """ testen ob return typ vorhanden ist """
+                methodeType = ""
+                if ":" in method["methode"] and method["methode"].split("):")[-1].strip() != "":
+                    methodeType = method["methode"].split("):")[-1].strip()
+                if methodeType != "":
+                    code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\"> {getValueForType(methodeType)} </span> </div>"
 
             code += "<div class=\"code-line\"></div>"
 
     codeContainer.innerHTML = code
 
 
-def modusWechseln(event=None):
+def modusWechselnNachAnsicht(event=None):
     button = document.getElementById("ansichtmodus")
-    umlPanel = document.getElementById("umlDiagram")
-    if umlPanel.classList.contains("collapsed"):
-        umlPanel.classList.remove("collapsed")
-        button.innerHTML = '<img src = "https://www.svgrepo.com/show/532985/pencil-slash.svg" alt= "Ansicht" class = "button-icon">'
-        renderUmlDiagram()
-    else:
-        umlPanel.classList.add("collapsed")
-        button.innerHTML = '<img src="https://www.svgrepo.com/show/532977/pencil.svg" alt="Bearbeiten" class="button-icon">'
-        ansichtModus()
+    umlPanel = document.getElementById('umlDiagram')
+    umlPanel.classList.add('collapsed')
+    button.innerHTML = '<img src = "button/pencil-slash-svgrepo-com.svg" alt= "Ansicht" class = "button-icon">'
+    ansichtModus()
+
+def modusWechselnNachBearbeiten(event=None):
+    button = document.getElementById("bearbeitenModus")
+    umlPanel = document.getElementById('umlDiagram')
+    button.innerHTML = '<img src = "button/pencil-svgrepo-com.svg" alt= "bearbeiten" class = "button-icon">'
+    umlPanel.classList.remove('collapsed')
+    renderUmlDiagram()
 
 
 def access_display(value):
@@ -718,7 +729,8 @@ def importJsonState(event=None):
 def on_dom_content_loaded(event=None):
     renderUmlDiagram()
     generateCode()
-    add_listener(document.getElementById("ansichtmodus"), "click", modusWechseln)
+    add_listener(document.getElementById("ansichtmodus"), "click", modusWechselnNachAnsicht)
+    add_listener(document.getElementById("bearbeitenModus"), "click", modusWechselnNachBearbeiten)
     add_listener(document.getElementById("toggleCode"), "click", toggleCodePanel)
     add_listener(document.getElementById("exportJson"), "click", openExportModal)
     add_listener(document.getElementById("importJson"), "click", openImportModal)
