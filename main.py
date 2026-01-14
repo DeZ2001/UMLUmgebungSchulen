@@ -473,6 +473,7 @@ def generateCode():
         
         """ wenn kein konstruktor vorhanden ist dann generieren """
         if not generateKon:
+            code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self</span>):</div>"
 
             if len(umlClass["attributes"]) > 0:
                 for attr in umlClass["attributes"]:
@@ -483,7 +484,6 @@ def generateCode():
                     value = getValueForType(attrType)
                     code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attrName} = {value}</div>"
             else:
-                code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self</span>):</div>"
                 code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
 
             code += "<div class=\"code-line\"></div>"
@@ -520,7 +520,7 @@ def generateCode():
                     methodeType = method["methode"].split("):")[-1].strip()
                 if methodeType != "":
                     code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\"> {getValueForType(methodeType)} </span> </div>"
-                else: 
+                else:
                     code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
 
             code += "<div class=\"code-line\"></div>"
