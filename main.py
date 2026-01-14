@@ -8,20 +8,16 @@ umlClasses = [
         "id": 1,
         "name": "",
         "attributes": [
-            {"id": 1, "attr": "name: str", "access": ""},
-            {"id": 2, "attr": "age: int", "access": ""},
-            {"id": 3, "attr": "email: str", "access": ""},
+            {"id": 1, "attr": "", "access": ""},
         ],
         "methods": [
-            {"id": 1, "methode": "c __init__(name: str, age: int, email: str)", "access": ""},
-            {"id": 2, "methode": "get_name(): str", "access": ""},
-            {"id": 3, "methode": "set_age(age: int)", "access": ""},
+            {"id": 1, "methode": "", "access": ""},
         ],
     }
 ]
 
-nextAttributeId = 4
-nextMethodId = 4
+nextAttributeId = 2
+nextMethodId = 2
 
 UI_FONT = "15px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
 
