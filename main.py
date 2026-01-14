@@ -8,20 +8,14 @@ umlClasses = [
         "id": 1,
         "name": "",
         "attributes": [
-            {"id": 1, "attr": "name: str", "access": ""},
-            {"id": 2, "attr": "age: int", "access": ""},
-            {"id": 3, "attr": "email: str", "access": ""},
         ],
         "methods": [
-            {"id": 1, "methode": "c __init__(name: str, age: int, email: str)", "access": ""},
-            {"id": 2, "methode": "get_name(): str", "access": ""},
-            {"id": 3, "methode": "set_age(age: int)", "access": ""},
         ],
     }
 ]
 
-nextAttributeId = 4
-nextMethodId = 4
+nextAttributeId = 1
+nextMethodId = 1
 
 UI_FONT = "15px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
 
@@ -391,7 +385,6 @@ def removeMethod(classId, methodId):
 
 def toggleCodePanel(event=None):
     codePanel = document.getElementById("codePanel")
-    toggleButton = document.getElementById("toggleCode")
     if codePanel.classList.contains("collapsed"):
         codePanel.classList.remove("collapsed")
     else:
@@ -446,6 +439,7 @@ def generateCode():
     for umlClass in umlClasses:
         code += f"<div class=\"code-line\"><span class=\"code-keyword\">class</span> <span class=\"code-class\">{umlClass['name']}</span>:</div>"
 
+        """ prüfen ob konstruktor vorhanden ist"""
         for method1 in get_sorted_methods(umlClass):
             if is_constructor_method(method1.get("methode")):
                 if len(umlClass["attributes"]) > 0:
@@ -476,9 +470,9 @@ def generateCode():
 
                 code += "<div class=\"code-line\"></div>"
                 generateKon = True
-
+        
+        """ wenn kein konstruktor vorhanden ist dann generieren """
         if not generateKon:
-            code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self):</span>"
 
             if len(umlClass["attributes"]) > 0:
                 for attr in umlClass["attributes"]:
@@ -526,6 +520,8 @@ def generateCode():
                     methodeType = method["methode"].split("):")[-1].strip()
                 if methodeType != "":
                     code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\"> {getValueForType(methodeType)} </span> </div>"
+                else: 
+                    code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
 
             code += "<div class=\"code-line\"></div>"
 
