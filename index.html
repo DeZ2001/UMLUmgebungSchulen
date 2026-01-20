@@ -7,18 +7,18 @@
     <script type="module" src="https://pyscript.net/releases/2024.2.1/core.js"></script>
     <link rel="stylesheet" href="styles.css">
   </head>
-  
+
   <body>
     <div class="container">
       <div class="header">
         <h1>Dynamische UML-zu-Code-Generierung</h1>
         <div class="controls">
-          <button id="resetSvg" class="btn btn-svg"><img src ="button/reset-svgrepo-com.svg" alt= "resetPosition" class = "button-icon"><span>Position</span></button>
-          <button id="exportJson" class="btn btn-svg"><img src ="button/export-2-svgrepo-com.svg" alt= "exportJson" class = "button-icon"></button>
-          <button id="importJson" class="btn btn-svg"><img src ="button/import-2-svgrepo-com.svg" alt= "importJson" class = "button-icon"></button>
-          <button id="bearbeitenModus" class="btn btn-svg"><img src ="button/pencil-svgrepo-com.svg" alt= "bearbeiten" class = "button-icon"></button>
-          <button id="ansichtmodus" class="btn btn-svg"><img src ="button/pencil-slash-svgrepo-com.svg" alt= "ansicht" class = "button-icon"></button>
-          <button id="toggleCode" class="btn btn-svg"><img src ="button/code-svgrepo-com.svg" alt= "PythoenCode" class = "button-icon"></button>
+          <button id="resetSvg" class="btn btn-svg tooltip"><img src ="button/reset-svgrepo-com.svg" alt= "resetPosition" class = "button-icon"><span class="tooltiptext">Position zurücksetzen</span></button>
+          <button id="exportJson" class="btn btn-svg tooltip"><img src ="button/export-2-svgrepo-com.svg" alt= "exportJson" class = "button-icon"><span class="tooltiptext">JSON exportieren</span></button>
+          <button id="importJson" class="btn btn-svg tooltip"><img src ="button/import-2-svgrepo-com.svg" alt= "importJson" class = "button-icon"><span class="tooltiptext">JSON importieren</span></button>
+          <button id="bearbeitenModus" class="btn btn-svg tooltip"><img src ="button/pencil-svgrepo-com.svg" alt= "bearbeiten" class = "button-icon"><span class="tooltiptext">Bearbeitungsmodus</span></button>
+          <button id="ansichtmodus" class="btn btn-svg tooltip"><img src ="button/pencil-slash-svgrepo-com.svg" alt= "ansicht" class = "button-icon"><span class="tooltiptext">Ansichtsmodus</span></button>
+          <button id="toggleCode" class="btn btn-svg tooltip"><img src ="button/code-svgrepo-com.svg" alt= "PythoenCode" class = "button-icon"><span class="tooltiptext">Code ein/ausblenden</span></button>
         </div>
       </div>
 

@@ -145,7 +145,7 @@
         border-radius: 3px;
         min-width: 0;
         width: 100%;
-        
+        position: relative;
         transition: background-color 0.2s;
       }
 
@@ -224,7 +224,7 @@
       }
           
       .code-keyword {
-        color: #3498db;
+        color: #0D6EFD;
       }
           
       .code-function {
@@ -236,11 +236,11 @@
       }
           
       .code-comment {
-        color: #7f8c8d;
+        color: #76828F;
       }
           
       .code-class {
-        color: #f39c12;
+        color: #D35400;
       }
           
       .code-attribute {
@@ -303,7 +303,7 @@
       
       .code-with-line-numbers {
         position: relative;
-        background-color: #d0f6d2;
+        background-color:#F4F8FF;
         border-radius: 5px;
         padding-left: 30px; 
         height: 100%;
@@ -390,6 +390,61 @@
       gap: 10px;
       justify-content: flex-end;
       padding: 0 16px 16px;
+    }
+
+    .add-btn:disabled {
+      opacity: 0.4 !important;
+      cursor: not-allowed !important;
+      background-color: #cccccc !important;
+      color: #666666 !important;
+    }
+
+    .add-btn:disabled:hover {
+      background-color: #cccccc !important;
+      color: #666666 !important;
+    }
+
+    /* Tooltip-Stile */
+    [title] {
+      position: relative;
+    }
+
+    /* Ensure buttons are large enough on mobile */
+    @media (max-width: 768px) {
+      .uml-item button.add-btn {
+        min-width: 24px;
+        min-height: 24px;
+        font-size: 12px;
+      }
+    }
+
+    .tooltip {
+      position: relative !important;
+      display: inline-block !important;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 120px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 4px;
+      padding: 5px;
+      position: absolute!important; 
+      z-index: 1000;
+      top: 100%;          
+      left: 50%;
+      margin-left: -60px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible!important;
+      opacity: 1!important;
     }
     
     
