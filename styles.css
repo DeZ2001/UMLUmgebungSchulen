@@ -246,6 +246,10 @@
       .code-attribute {
         color: #9b59b6;
       }
+
+      .code-warning {
+        color: #d20000;
+      }
           
       @media (max-width: 768px) {
         .panels-container {
@@ -395,11 +399,6 @@
     .add-btn:disabled {
       opacity: 0.4 !important;
       cursor: not-allowed !important;
-      background-color: #cccccc !important;
-      color: #666666 !important;
-    }
-
-    .add-btn:disabled:hover {
       background-color: #cccccc !important;
       color: #666666 !important;
     }
