@@ -1,17 +1,22 @@
+
 class UMLDragger {
   constructor() {
+    // UML Diagramm Element holen
     this.umlElement = document.getElementById('umlDiagram');
+    // ID der Klasse speichern
     this.classId = this.umlElement.getAttribute('data-class-id');
+    // Status ob gezogen wird
     this.isDragging = false;
-    this.currentX = 0;
+    this.currentX = 0; // Aktuelle Position
     this.currentY = 0;
-    this.initialX = 0;
+    this.initialX = 0; // Anfangsposition beim Drag
     this.initialY = 0;
-    this.xOffset = 0;
+    this.xOffset = 0; // Offset für Translation
     this.yOffset = 0;
     this.init();
   }
 
+   // Ereignisse initialisieren
   init() {
     this.umlElement.addEventListener('mousedown', (e) => this.dragStart(e));
     document.addEventListener('mousemove', (e) => this.drag(e));
@@ -19,10 +24,13 @@ class UMLDragger {
     this.umlElement.addEventListener('touchstart', (e) => this.dragStart(e.touches[0]));
     document.addEventListener('touchmove', (e) => this.drag(e.touches[0]));
     document.addEventListener('touchend', () => this.dragEnd());
+    // Gespeicherte Position laden
     this.loadPosition();
   }
 
+  // Drag starten
   dragStart(e) {
+    // Input oder Button nicht ziehen
     if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') {
       return;
     }
@@ -38,6 +46,7 @@ class UMLDragger {
     }
   }
 
+  // Drag bewegen
   drag(e) {
     if (this.isDragging) {
       e.preventDefault();
@@ -49,17 +58,20 @@ class UMLDragger {
     }
   }
 
+  // Drag beenden
   dragEnd() {
     this.isDragging = false;
     this.umlElement.style.cursor = 'move';
     this.umlElement.style.boxShadow = '';
     this.savePosition();
   }
-
+ 
+  // Position anwenden
   setTranslate(xPos, yPos) {
     this.umlElement.style.transform = `translate(${xPos}px, ${yPos}px)`;
   }
 
+  // Position in localStorage speichern
   savePosition() {
     const position = JSON.parse(localStorage.getItem('umlPosition')) || '{}';
     position[this.classId] =
@@ -70,6 +82,7 @@ class UMLDragger {
     localStorage.setItem('umlPosition', JSON.stringify(position));
   }
 
+  // Gespeicherte Position laden
   loadPosition() {
     const saved = localStorage.getItem('umlPosition');
     if (saved) {
@@ -80,6 +93,7 @@ class UMLDragger {
     }
   }
 
+  // Position zurücksetzen
   resetPosition() {
     this.xOffset = 0;
     this.yOffset = 0;
@@ -88,6 +102,7 @@ class UMLDragger {
   }
 }
 
+// UMLDragger Objekt erstellen
 let umlDragger;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -95,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
   umlDragger.loadPosition();
 });
 
+// Reset Button Funktion hinzufügen
 function addResetButton() {
   const resetBtn = document.getElementById('resetSvg');
   resetBtn.onclick = () => {
