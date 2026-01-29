@@ -950,20 +950,18 @@ def modusWechselnNachAnsicht(event=None):
     button = document.getElementById("ansichtmodus")
     umlPanel = document.getElementById('umlDiagram')
     umlPanel.classList.add('collapsed')
-    button.innerHTML = '<img src = "button/pencil-slash-svgrepo-com.svg" alt= "Ansicht" class = "button-icon">'
+    #button.innerHTML = '<img src = "button/pencil-slash-svgrepo-com.svg" alt= "Ansicht" class = "button-icon"><span class="tooltiptext">Ansichtsmodus</span>'
     ansichtModus()
 
 def modusWechselnNachBearbeiten(event=None):
     button = document.getElementById("bearbeitenModus")
     umlPanel = document.getElementById('umlDiagram')
-    button.innerHTML = '<img src = "button/pencil-svgrepo-com.svg" alt= "bearbeiten" class = "button-icon">'
+    #button.innerHTML = '<img src = "button/pencil-svgrepo-com.svg" alt= "bearbeiten" class = "button-icon"><span class="tooltiptext">Bearbeitungsmodus</span>'
     umlPanel.classList.remove('collapsed')
     renderUmlDiagram()
 
-
 def access_display(value):
     return "null" if value is None else value
-
 
 def ansichtModus():
     umlDiagram = document.getElementById("umlDiagram")
