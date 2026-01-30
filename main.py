@@ -198,7 +198,7 @@ def measureTextWidth(text=""):
     return context.measureText(text).width
 
 def calculateClassWidth(umlClass):
-    scale = 0.75
+    scale = 1
     padding = 80 * scale
     minWidth = 365 * scale
     umlDiagram = document.getElementById("umlDiagram")
