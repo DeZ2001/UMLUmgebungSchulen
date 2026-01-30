@@ -43,9 +43,87 @@ jsonFileInput = document.getElementById("jsonFileInput")
 # Speicherung aller Event-Proxies
 event_proxies = []
 
-# ======================
-# Event-Helferfunktionen
-# ======================
+def generate_getter_name(attr_name):
+    """getter Methode name generieren"""
+    return f"get_{attr_name}"
+
+def generate_setter_name(attr_name):
+    """setter Methode name generieren"""
+    return f"set_{attr_name}"
+
+def extract_attr_name_from_method(method_name):
+    """Extract attribute name from getter/setter method name"""
+    if method_name.startswith("get_"):
+        return method_name[4:]
+    elif method_name.startswith("set_"):
+        return method_name[4:]
+    return None
+
+def get_attr_type(attr_value):
+    """Extract type from attribute string"""
+    if ":" in attr_value:
+        return attr_value.split(":")[1].strip()
+    return ""
+
+def build_getter_signature(attr_name, attr_type):
+    """Build getter method signature"""
+    return_type = f":{attr_type}" if attr_type else ""
+    return f"{generate_getter_name(attr_name)}(){return_type}"
+
+def build_setter_signature(attr_name, attr_type):
+    """Build setter method signature"""
+    param_type = f":{attr_type}" if attr_type else ""
+    return f"{generate_setter_name(attr_name)}(value{param_type})"
+
+def get_existing_getter_setter(umlClass, attr_name):
+    """Überprüft, ob Getter/Setter-Methoden existieren"""
+    getter_name = generate_getter_name(attr_name)
+    setter_name = generate_setter_name(attr_name)
+    
+    has_getter = False
+    has_setter = False
+    
+    for method in umlClass["methods"]:
+        method_name = method["methode"].split("(")[0].strip()
+        if method_name == getter_name:
+            has_getter = True
+        elif method_name == setter_name:
+            has_setter = True
+    
+    return {
+        "has_getter": has_getter,
+        "has_setter": has_setter,
+        "is_getter_manual": has_getter,  # Da immer deaktiviert, wenn vorhanden
+        "is_setter_manual": has_setter   # Da immer deaktiviert, wenn vorhanden
+    }
+
+def is_getter_button_disabled(umlClass, attribute):
+    """Bestimmt, ob Getter-Button deaktiviert sein soll"""
+    attr_str = attribute.get("attr", "")
+    if not attr_str or attr_str.strip() == "":
+        return False  # Kein Attributname, Button aktiv
+    
+    attr_name = attr_str.split(":")[0].strip() if ":" in attr_str else attr_str.strip()
+    if not attr_name:
+        return False
+    
+    existing = get_existing_getter_setter(umlClass, attr_name)
+    # Deaktivieren, wenn Getter existiert (egal ob manuell oder automatisch)
+    return existing["has_getter"]
+
+def is_setter_button_disabled(umlClass, attribute):
+    """Bestimmt, ob Setter-Button deaktiviert sein soll"""
+    attr_str = attribute.get("attr", "")
+    if not attr_str or attr_str.strip() == "":
+        return False  # Kein Attributname, Button aktiv
+    
+    attr_name = attr_str.split(":")[0].strip() if ":" in attr_str else attr_str.strip()
+    if not attr_name:
+        return False
+    
+    existing = get_existing_getter_setter(umlClass, attr_name)
+    # Deaktivieren, wenn Setter existiert (egal ob manuell oder automatisch)
+    return existing["has_setter"]
 
 def add_listener(element, event_name, handler):
     """ Fügt einen EventListener hinzu und speichert den Proxy """
@@ -174,8 +252,20 @@ def renderUmlDiagram():
                     <button class=\"btn-small access-btn {getSelected(attri.get('access'), '#')}\" data-access=\"#\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\">#</button>
                     <input type=\"text\" value=\"{attri['attr']}\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\" data-field=\"attr\" placeholder=\"Attributname:Datentyp\">
                     <button class=\"remove-attr\" id=\"remove\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\">×</button>
-                    <button class=\"add-btn getter\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\" style=\"background: #00000033\">g</button>
-                    <button class=\"add-btn setter\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\" style=\"background: #00000033\">s</button>
+                    <!-- Getter-Button mit Tooltip -->
+                    <button class=\"add-btn getter\" 
+                            data-class-id=\"{umlClass['id']}\" 
+                            data-attr-id=\"{attri['id']}\" 
+                            {'disabled' if is_getter_button_disabled(umlClass, attri) else ''}
+                            title=\"{"Getter bereits vorhanden" if is_getter_button_disabled(umlClass, attri) else "Getter-Methode generieren"}\"
+                            style=\"background: #00000033\">g</button>
+                    <!-- Setter-Button mit Tooltip -->
+                    <button class=\"add-btn setter\" 
+                            data-class-id=\"{umlClass['id']}\" 
+                            data-attr-id=\"{attri['id']}\" 
+                            {'disabled' if is_setter_button_disabled(umlClass, attri) else ''}
+                            title=\"{"Setter bereits vorhanden" if is_setter_button_disabled(umlClass, attri) else "Setter-Methode generieren"}\"
+                            style=\"background: #00000033\">s</button>
                   </div>
                 """
                 for attri in umlClass["attributes"]
@@ -229,6 +319,7 @@ def renderUmlDiagram():
     # Events registrieren und Größen anpassen
     addEventListeners()
     resizeUmlClasses()
+    updateGetterSetterButtons()
 
 # ====================================
 # Event-Handling & Benutzerinteraktion
@@ -289,9 +380,12 @@ def addEventListeners():
     for button in document.querySelectorAll(".access-btn"):
         add_listener(button, "click", changeAccessModifier)
 
-# ===================
-# Datenaktualisierung
-# ===================
+    for button in document.querySelectorAll(".getter"):
+        add_listener(button, "click", handle_getter_click)
+    
+    for button in document.querySelectorAll(".setter"):
+        add_listener(button, "click", handle_setter_click)
+
 
 def updateClassName(classId, newName):
     """ Aktualisiert den Namen einer UML-Klasse """"
@@ -350,12 +444,63 @@ def updateAttribute(classId, attrId, field, value):
         if umlClass["id"] == classId:
             for attribute in umlClass["attributes"]:
                 if attribute["id"] == attrId:
+                    old_name = attribute.get("attr", "")
+                    old_attr_name = old_name.split(":")[0].strip() if ":" in old_name else old_name.strip()
+                    
                     attribute[field] = value
+                     # 获取新的属性名
+                    new_attr_full = value
+                    new_attr_name = new_attr_full.split(":")[0].strip() if ":" in new_attr_full else new_attr_full.strip()
+                    
+                    # If attribute name changed, update corresponding getter/setter method names
+                    if field == "attr" and old_attr_name != new_attr_name and old_attr_name != "":
+                        update_getter_setter_names(umlClass, old_attr_name, new_attr_name)
+                    
                     sync_constructor_method(umlClass)
                     refresh_constructor_inputs(umlClass)
+                    
+                    # 更新按钮状态
+                    updateGetterSetterButtons()
+                    
                     generateCode()
                     resizeUmlClasses()
                     return
+
+def update_getter_setter_names(umlClass, old_attr_name, new_attr_name):
+    """Aktualisiert Getter/Setter-Methodennamen bei Attributnamenänderung"""
+    if not old_attr_name or not new_attr_name or old_attr_name == new_attr_name:
+        return
+    
+    for method in umlClass["methods"]:
+        method_text = method.get("methode", "")
+        if not method_text:
+            continue
+        
+        # 获取方法名（不包含参数）
+        method_name = method_text.split("(")[0].strip()
+        
+        # 检查是否是getter方法
+        if method_name == f"get_{old_attr_name}":
+            # 更新getter方法名
+            new_method_name = f"get_{new_attr_name}"
+            if "(" in method_text:
+                # 保留参数部分
+                params_part = method_text[method_text.find("("):]
+                method["methode"] = f"{new_method_name}{params_part}"
+            else:
+                method["methode"] = new_method_name
+        
+        # 检查是否是setter方法
+        elif method_name == f"set_{old_attr_name}":
+            # 更新setter方法名
+            new_method_name = f"set_{new_attr_name}"
+            if "(" in method_text:
+                # 保留参数部分
+                params_part = method_text[method_text.find("("):]
+                method["methode"] = f"{new_method_name}{params_part}"
+            else:
+                method["methode"] = new_method_name
+
 
 def updateMethod(classId, methodId, field, value):
     """ Aktualisiert eine Methode """
@@ -364,10 +509,15 @@ def updateMethod(classId, methodId, field, value):
             for method in umlClass["methods"]:
                 if method["id"] == methodId:
                     was_constructor = is_constructor_method(method.get("methode"))
+                    old_value = method.get(field, "")
+                    
+                    # 更新方法
                     method[field] = value
                     rerender = False
+                    
                     if field == "methode":
                         is_constructor = is_constructor_method(value)
+                        
                         if is_constructor:
                             method["access"] = ""
                             signature = build_constructor_signature(umlClass)
@@ -382,8 +532,15 @@ def updateMethod(classId, methodId, field, value):
                         elif was_constructor:
                             method["auto"] = False
                             rerender = True
+                        
+                        # 当方法名改变时，更新getter/setter按钮状态
+                        updateGetterSetterButtons()
+                    
+                    # 总是生成代码（即使是普通更新）
                     generateCode()
                     resizeUmlClasses()
+                    
+                    # 如果需要重新渲染UML图
                     if rerender:
                         renderUmlDiagram()
                     return
@@ -411,7 +568,13 @@ def addAttribute(classId):
     global nextAttributeId
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
-            umlClass["attributes"].append({"id": nextAttributeId, "attr": "", "access": None})
+            umlClass["attributes"].append({
+                "id": nextAttributeId, 
+                "attr": "", 
+                "access": "",
+                "has_getter": False,
+                "has_setter": False
+            })
             nextAttributeId += 1
             sync_constructor_method(umlClass)
             renderUmlDiagram()
@@ -423,27 +586,241 @@ def addMethod(classId):
     global nextMethodId
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
-            umlClass["methods"].append({"id": nextMethodId, "methode": "", "access": None})
+            umlClass["methods"].append({
+                "id": nextMethodId, 
+                "methode": "", 
+                "access": "",
+                "auto_generated": False
+            })
             nextMethodId += 1
+            updateGetterSetterButtons()
             renderUmlDiagram()
             generateCode()
             return
-
-# Entfernt ein Attribut
-def removeAttribute(classId, attrId):
+        
+def handle_getter_click(event):
+    """Handhabt Getter-Button-Klick"""
+    target = event.target
+    classId = int(target.dataset.classId)
+    attrId = int(target.dataset.attrId)
+    
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
+            for attribute in umlClass["attributes"]:
+                if attribute["id"] == attrId:
+                    attr_str = attribute["attr"]
+                    if not attr_str or attr_str.strip() == "":
+                        return  # Kein Attributname vorhanden
+                    
+                    attr_name = attr_str.split(":")[0].strip() if ":" in attr_str else attr_str.strip()
+                    attr_type = get_attr_type(attr_str)
+                    
+                    # Prüfen, ob bereits Getter vorhanden ist
+                    existing = get_existing_getter_setter(umlClass, attr_name)
+                    if existing["has_getter"]:
+                        # Getter bereits vorhanden, Button sollte bereits deaktiviert sein
+                        return
+                    
+                    # Automatisch generierten Getter hinzufügen
+                    add_getter_method(umlClass, attr_name, attr_type)
+                    attribute["has_getter"] = True
+                    
+                    renderUmlDiagram()  # Neu rendern, um Button zu deaktivieren
+                    generateCode()
+                    return
+
+def handle_setter_click(event):
+    """Handhabt Setter-Button-Klick"""
+    target = event.target
+    classId = int(target.dataset.classId)
+    attrId = int(target.dataset.attrId)
+    
+    for umlClass in umlClasses:
+        if umlClass["id"] == classId:
+            for attribute in umlClass["attributes"]:
+                if attribute["id"] == attrId:
+                    attr_str = attribute["attr"]
+                    if not attr_str or attr_str.strip() == "":
+                        return  # Kein Attributname vorhanden
+                    
+                    attr_name = attr_str.split(":")[0].strip() if ":" in attr_str else attr_str.strip()
+                    attr_type = get_attr_type(attr_str)
+                    
+                    # Prüfen, ob bereits Setter vorhanden ist
+                    existing = get_existing_getter_setter(umlClass, attr_name)
+                    if existing["has_setter"]:
+                        # Setter bereits vorhanden, Button sollte bereits deaktiviert sein
+                        return
+                    
+                    # Automatisch generierten Setter hinzufügen
+                    add_setter_method(umlClass, attr_name, attr_type)
+                    attribute["has_setter"] = True
+                    
+                    renderUmlDiagram()  # Neu rendern, um Button zu deaktivieren
+                    generateCode()
+                    return
+
+def add_getter_method(umlClass, attr_name, attr_type):
+    """Fügt eine Getter-Methode hinzu"""
+    global nextMethodId
+    getter_signature = build_getter_signature(attr_name, attr_type)
+    
+    # Prüfen, ob bereits vorhanden (manuell oder automatisch)
+    for method in umlClass["methods"]:
+        if method["methode"].startswith(f"{generate_getter_name(attr_name)}("):
+            return
+    
+    umlClass["methods"].append({
+        "id": nextMethodId,
+        "methode": getter_signature,
+        "access": "",
+        "auto_generated": True  # Automatisch generierte Methode
+    })
+    nextMethodId += 1
+
+def add_setter_method(umlClass, attr_name, attr_type):
+    """Fügt eine Setter-Methode hinzu"""
+    global nextMethodId
+    setter_signature = build_setter_signature(attr_name, attr_type)
+    
+    # Prüfen, ob bereits vorhanden (manuell oder automatisch)
+    for method in umlClass["methods"]:
+        if method["methode"].startswith(f"{generate_setter_name(attr_name)}("):
+            return
+    
+    umlClass["methods"].append({
+        "id": nextMethodId,
+        "methode": setter_signature,
+        "access": "",
+        "auto_generated": True  # Automatisch generierte Methode
+    })
+    nextMethodId += 1
+    
+def updateGetterSetterButtons():
+    """根据现有方法更新所有属性的getter/setter按钮状态"""
+    for umlClass in umlClasses:
+        class_id = umlClass["id"]
+        
+        for attr in umlClass["attributes"]:
+            attr_id = attr["id"]
+            attr_full = attr["attr"]
+            
+            # 安全地提取属性名（处理可能为空的情况）
+            if not attr_full:
+                attr_name = ""
+            else:
+                attr_parts = attr_full.split(":")
+                attr_name = attr_parts[0].strip() if len(attr_parts) > 0 else attr_full.strip()
+            
+            if not attr_name:  # 如果属性名为空，跳过
+                continue
+            
+            # 检查是否存在对应的方法
+            has_getter = False
+            has_setter = False
+            
+            for method in umlClass["methods"]:
+                method_text = method.get("methode", "")
+                if not method_text:
+                    continue
+                
+                # 提取方法名（不包含参数）
+                if "(" in method_text:
+                    method_name = method_text.split("(")[0].strip()
+                else:
+                    method_name = method_text.strip()
+                
+                # 精确匹配getter（必须是 get_属性名）
+                if method_name == f"get_{attr_name}":
+                    has_getter = True
+                
+                # 精确匹配setter（必须是 set_属性名）
+                if method_name == f"set_{attr_name}":
+                    has_setter = True
+            
+            # 更新按钮
+            getter_btn = document.querySelector(f'.getter[data-class-id="{class_id}"][data-attr-id="{attr_id}"]')
+            setter_btn = document.querySelector(f'.setter[data-class-id="{class_id}"][data-attr-id="{attr_id}"]')
+            
+            if getter_btn:
+                if has_getter:
+                    getter_btn.title = f"Getter für '{attr_name}' existiert"
+                    getter_btn.style.color = "white"
+                    getter_btn.disabled = True  # 禁用按钮
+                else:
+                    getter_btn.style.backgroundColor = "#00000033"  # 半透明
+                    getter_btn.title = f"Getter für '{attr_name}' hinzufügen"
+                    getter_btn.style.color = "rgb(211, 211, 211)"
+                    getter_btn.disabled = False  # 启用按钮
+            
+            if setter_btn:
+                if has_setter:
+                    setter_btn.title = f"Setter für '{attr_name}' existiert"
+                    setter_btn.style.color = "white"
+                    setter_btn.disabled = True  # 禁用按钮
+                else:
+                    setter_btn.style.backgroundColor = "#00000033"  # 半透明
+                    setter_btn.title = f"Setter für '{attr_name}' hinzufügen"
+                    setter_btn.style.color = "rgb(211, 211, 211)"
+                    setter_btn.disabled = False  # 启用按钮
+
+def removeAttribute(classId, attrId):
+    """Entfernt ein Attribut aus der Klasse"""
+    for umlClass in umlClasses:
+        if umlClass["id"] == classId:
+            # 先获取要删除的属性名
+            for attr in umlClass["attributes"]:
+                if attr["id"] == attrId:
+                    attr_name = attr["attr"].split(":")[0].strip() if ":" in attr["attr"] else attr["attr"].strip()
+                    
+                    # 删除对应的getter和setter方法
+                    umlClass["methods"] = [
+                        m for m in umlClass["methods"] 
+                        if not (
+                            m.get("methode", "").split("(")[0].strip() in [f"get_{attr_name}", f"set_{attr_name}"]
+                        )
+                    ]
+                    break
+            
+            # 然后删除属性本身
             umlClass["attributes"] = [a for a in umlClass["attributes"] if a["id"] != attrId]
             sync_constructor_method(umlClass)
+            updateGetterSetterButtons()  # 更新按钮状态
             renderUmlDiagram()
             generateCode()
             return
 
 # Entfernt eine Methode
 def removeMethod(classId, methodId):
+    """Entfernt eine Methode aus der Klasse"""
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
+            method_to_delete = None
+            for method in umlClass["methods"]:
+                if method["id"] == methodId:
+                    method_to_delete = method
+                    break
+            
+            if method_to_delete:
+                # Prüfen, ob es eine Getter/Setter-Methode ist
+                method_name = method_to_delete["methode"].split("(")[0].strip()
+                attr_name = extract_attr_name_from_method(method_name)
+                
+                if attr_name and not method_to_delete.get("auto_generated", False):
+                    # Manuell hinzugefügte Getter/Setter-Methode
+                    # Entsprechenden Button wieder aktivieren
+                    for attr in umlClass["attributes"]:
+                        attr_str = attr.get("attr", "")
+                        current_attr_name = attr_str.split(":")[0].strip() if ":" in attr_str else attr_str.strip()
+                        if current_attr_name == attr_name:
+                            if method_name.startswith("get_"):
+                                attr["has_getter"] = True  # Getter-Button aktivieren
+                            elif method_name.startswith("set_"):
+                                attr["has_setter"] = True  # Setter-Button aktivieren
+            
+            # Methode entfernen
             umlClass["methods"] = [m for m in umlClass["methods"] if m["id"] != methodId]
+            updateGetterSetterButtons()
             renderUmlDiagram()
             generateCode()
             return
@@ -521,6 +898,7 @@ def generateCode():
 
         """ prüfen ob konstruktor vorhanden ist"""
         for method1 in get_sorted_methods(umlClass):
+            ' Überprüfen, ob es sich um den Konstruktor handelt'
             if is_constructor_method(method1.get("methode")):
                 # Konstruktor mit Attribute
                 if len(umlClass["attributes"]) > 0:
@@ -575,31 +953,66 @@ def generateCode():
                 continue
             if is_constructor_method(method.get("methode")):
                 continue
+            
             methodename = method["methode"].split("(")[0].strip()
             code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">{methodename}</span>(<span class=\"code-keyword\">self</span>"
 
-            parametersPart = method["methode"].split("(")[1].split(")")[0].strip()
-            parametersPart = [] if parametersPart == "" else parametersPart.split(",")
-            for param in parametersPart:
-                paramName, paramTyp = [p.strip() for p in param.split(":")]
-                if param in parametersPart:
+            if "(" in method["methode"] and ")" in method["methode"]:
+                params_text = method["methode"].split("(", 1)[1].split(")", 1)[0].strip()
+                if params_text:
                     code += ", "
-                code += f"{paramName}:{paramTyp}</span>"
+                    parameters = params_text.split(",")
+                    for i, param in enumerate(parameters):
+                        param = param.strip()
+                        if ":" in param:
+                            try:
+                                paramName, paramTyp = [p.strip() for p in param.split(":", 1)]
+                                if i > 0:
+                                    code += ", "
+                                code += f"{paramName}:{paramTyp}"
+                            except:
+                                if i > 0:
+                                    code += ", "
+                                code += f"{param}"
+                        else:
+                            if i > 0:
+                                code += ", "
+                            code += f"{param}"
 
             code += "):</div>"
-
-            # Getter Methode
+            
+            parametersPart = []
+            if "(" in method["methode"] and ")" in method["methode"]:
+                params_text = method["methode"].split("(", 1)[1].split(")", 1)[0].strip()
+                if params_text:
+                    parametersPart = [p.strip() for p in params_text.split(",")]
+            
             if(methodename.startswith("get_")):
                 attr_name = methodename[4:]
                 code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name}</span></div>"
             # Setter Methode
             elif(methodename.startswith("set_")):
                 attr_name = methodename[4:]
-                param_name = parametersPart[0].split(":")[0].strip() if len(parametersPart) > 0 else "value"
+                if len(parametersPart) > 0:
+                    param_name = parametersPart[0].split(":")[0].strip()  
+                else:
+                    # Fallback, falls kein Parameter definiert ist, sollte eine Werte nach der Type der Attribute nehmen
+                    for attr in umlClass["attributes"]:
+                        attribute = attr["attr"]
+                        parts = [a.strip() for a in attribute.split(":")]
+                        current_attr_name = parts[0] if len(parts) > 0 else ""
+                        if current_attr_name == attr_name:
+                            attrType = parts[1] if len(parts) > 1 else ""
+                            param_name = getValueForType(attrType)
+                            break
+                    if 'param_name' not in locals():
+                        code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-warning\">!! keine Attribute / Parameter</span></div>"
+                        code += "<div class=\"code-line\"></div>"
+                        continue
                 code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name} = {param_name}</span></div>"
             # Sonstige Methoden
             else:
-                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-comment\"># TODO: Implement {methodename} method</span></div>"
+                code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
                 """ testen ob return typ vorhanden ist """
                 methodeType = ""
                 if ":" in method["methode"] and method["methode"].split("):")[-1].strip() != "":
@@ -610,7 +1023,6 @@ def generateCode():
                     code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
 
             code += "<div class=\"code-line\"></div>"
-
     codeContainer.innerHTML = code
 
 # ========================
@@ -622,14 +1034,14 @@ def modusWechselnNachAnsicht(event=None):
     button = document.getElementById("ansichtmodus")
     umlPanel = document.getElementById('umlDiagram')
     umlPanel.classList.add('collapsed')
-    button.innerHTML = '<img src = "button/pencil-slash-svgrepo-com.svg" alt= "Ansicht" class = "button-icon">'
+    #button.innerHTML = '<img src = "button/pencil-slash-svgrepo-com.svg" alt= "Ansicht" class = "button-icon"><span class="tooltiptext">Ansichtsmodus</span>'
     ansichtModus()
 
 def modusWechselnNachBearbeiten(event=None):
     """ Wechselt in den Bearbeitungsmodus """
     button = document.getElementById("bearbeitenModus")
     umlPanel = document.getElementById('umlDiagram')
-    button.innerHTML = '<img src = "button/pencil-svgrepo-com.svg" alt= "bearbeiten" class = "button-icon">'
+    #button.innerHTML = '<img src = "button/pencil-svgrepo-com.svg" alt= "bearbeiten" class = "button-icon"><span class="tooltiptext">Bearbeitungsmodus</span>'
     umlPanel.classList.remove('collapsed')
     renderUmlDiagram()
 
@@ -651,7 +1063,7 @@ def ansichtModus():
                 f"""
                   <div class=\"uml-item\">
                     <input type=\"text\" value=\"{access_display(attri.get('access'))} {attri['attr']}\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\" data-field=\"attr\" placeholder=\"Attributname:Datentyp\" readonly>
-                    </div>
+                  </div>
                 """
                 for attri in umlClass["attributes"]
             ]
@@ -839,6 +1251,8 @@ def normalizeImportedClasses(data):
                         "id": attr.get("id") if isinstance(attr.get("id"), (int, float)) and math.isfinite(attr.get("id")) else idx + 1,
                         "attr": attr.get("attr") if isinstance(attr.get("attr"), str) else "",
                         "access": attr.get("access") if isinstance(attr.get("access"), str) else "",
+                        "has_getter": bool(attr.get("has_getter", False)),
+                        "has_setter": bool(attr.get("has_setter", False))
                     }
                     for idx, attr in enumerate(umlClass.get("attributes") or [])
                 ],
@@ -847,6 +1261,7 @@ def normalizeImportedClasses(data):
                         "id": method.get("id") if isinstance(method.get("id"), (int, float)) and math.isfinite(method.get("id")) else idx + 1,
                         "methode": method.get("methode") if isinstance(method.get("methode"), str) else "",
                         "access": method.get("access") if isinstance(method.get("access"), str) else "",
+                        "auto_generated": bool(method.get("auto_generated", False))
                     }
                     for idx, method in enumerate(umlClass.get("methods") or [])
                 ],
@@ -908,6 +1323,7 @@ def on_dom_content_loaded(event=None):
     """ Wird ausgeführt, wenn DOM fertig geladen ist """
     renderUmlDiagram()
     generateCode()
+    updateGetterSetterButtons()
     add_listener(document.getElementById("ansichtmodus"), "click", modusWechselnNachAnsicht)
     add_listener(document.getElementById("bearbeitenModus"), "click", modusWechselnNachBearbeiten)
     add_listener(document.getElementById("toggleCode"), "click", toggleCodePanel)
