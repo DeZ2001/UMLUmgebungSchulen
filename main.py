@@ -3,6 +3,11 @@ from pyodide.ffi import create_proxy
 import math
 import json
 
+# ===================================
+# UML-Datenmodell & globale Variablen
+# ===================================
+
+# Liste aller UML-Klassen
 umlClasses = [
     {
         "id": 1,
@@ -13,13 +18,18 @@ umlClasses = [
         ],
     }
 ]
-
+# Zähler für eindeutige Attribut-IDs
 nextAttributeId = 1
+# Zähler für eindeutige Methoden-IDs
 nextMethodId = 1
-
+# Schriftart für Textmessungen im UI
 UI_FONT = "15px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-
+# Textbreiten messen
 measureTextWidth_canvas = None
+
+# ============================
+# DOM-Referenzen (UI-Elemente)
+# ============================
 
 jsonModalOverlay = document.getElementById("jsonModalOverlay")
 jsonModalTitle = document.getElementById("jsonModalTitle")
@@ -30,36 +40,51 @@ jsonModalSecondary = document.getElementById("jsonModalSecondary")
 jsonModalClose = document.getElementById("jsonModalClose")
 jsonFileInput = document.getElementById("jsonFileInput")
 
+# Speicherung aller Event-Proxies
 event_proxies = []
 
+# ======================
+# Event-Helferfunktionen
+# ======================
 
 def add_listener(element, event_name, handler):
+    """ Fügt einen EventListener hinzu und speichert den Proxy """
+    # Wenn Element nicht existiert → abbrechen
     if not element:
         return
+    # Python-Funktion in JS-Proxy umwandeln
     proxy = create_proxy(handler)
-    element.addEventListener(event_name, proxy)
-    event_proxies.append(proxy)
-
+    element.addEventListener(event_name, proxy) # Event registrieren
+    event_proxies.append(proxy) # Speichern
 
 def set_onclick(element, handler):
+    """ Setzt eine onclick-Funktion """
     if not element:
         return
     proxy = create_proxy(handler)
     element.onclick = proxy
     event_proxies.append(proxy)
 
+# =========================
+# Zugriffstypen (+ / - / #)
+# =========================
 
 def changeAccessModifier(event):
+    """ Ändert den Access Modifier eines Attributs oder einer Methode """
     target = event.target
     accessType = target.dataset.access
     classId = int(target.dataset.classId)
+
+    # Wenn ein Attribut geklickt wurde
     if target.hasAttribute("data-attr-id"):
         attributeId = int(target.getAttribute("data-attr-id"))
         setAccessModifier(classId, attributeId, None, accessType)
+        # Alte Auswahl entfernen
         for btn in document.querySelectorAll(
             f'button[data-attr-id="{attributeId}"].access-btn'
         ):
             btn.classList.remove("selected")
+    # Wenn eine Methode geklickt wurde
     elif target.hasAttribute("data-method-id"):
         methodId = int(target.getAttribute("data-method-id"))
         setAccessModifier(classId, None, methodId, accessType)
@@ -69,29 +94,37 @@ def changeAccessModifier(event):
             if btn.id == "remove":
                 continue
             btn.classList.remove("selected")
+    # Aktuelle Button markieren
     target.classList.add("selected")
 
-
 def getSelected(current, expected):
+    """ Prüft, ob ein Button ausgewählt ist """
     return "selected" if current == expected else ""
 
+# ========================
+# Text- & Größenberechnung
+# ========================
 
 def measureTextWidth(text=""):
+    """ Berechnet die Textbreite in Pixel """
     global measureTextWidth_canvas
+
+    # Canvas erzeugen (nur 1-mal)
     if measureTextWidth_canvas is None:
         measureTextWidth_canvas = document.createElement("canvas")
     context = measureTextWidth_canvas.getContext("2d")
+    # Fallback bei Fehler
     if not context:
         return len(text) * 8
     context.font = UI_FONT
     return context.measureText(text).width
-
 
 def calculateClassWidth(umlClass):
     scale = 0.75
     padding = 80 * scale
     minWidth = 365 * scale
     umlDiagram = document.getElementById("umlDiagram")
+    # Containerbreite bestimmen
     containerWidth = (
         (umlDiagram.parentElement.clientWidth if umlDiagram and umlDiagram.parentElement else None)
         or (umlDiagram.clientWidth if umlDiagram else None)
@@ -100,6 +133,7 @@ def calculateClassWidth(umlClass):
     containerWidth -= 40
     maxWidth = max(minWidth, containerWidth * scale)
 
+    # Maximale Textbreite ermitteln
     maxTextWidth = measureTextWidth(umlClass["name"])
     for attr in umlClass["attributes"]:
         maxTextWidth = max(maxTextWidth, measureTextWidth(attr["attr"]))
@@ -108,8 +142,8 @@ def calculateClassWidth(umlClass):
 
     return min(maxWidth, max(minWidth, math.ceil((maxTextWidth + padding))))
 
-
 def resizeUmlClasses():
+    """ Die Breite des UML-Diagramm anpassen"""
     umlDiagram = document.getElementById("umlDiagram")
     if not umlDiagram:
         return
@@ -119,13 +153,18 @@ def resizeUmlClasses():
             classElement.style.width = f"{calculateClassWidth(umlClass)}px"
 
 
+# ===========================
+# Rendering des UML-Diagramms
+# ===========================
+
 def renderUmlDiagram():
+    """ Erstellt das komplette UML-Diagramm neu """
     umlDiagram = document.getElementById("umlDiagram")
     umlDiagram.innerHTML = ""
     for umlClass in umlClasses:
         classElement = document.createElement("div")
         classElement.className = "uml-class"
-
+        # HTML für Attribute
         attributes_html = "".join(
             [
                 f"""
@@ -142,7 +181,7 @@ def renderUmlDiagram():
                 for attri in umlClass["attributes"]
             ]
         )
-
+        # HTML für Methoden
         methods_html = "".join(
             [
                 (
@@ -167,7 +206,7 @@ def renderUmlDiagram():
                 for method in get_sorted_methods(umlClass)
             ]
         )
-
+        # Zusammensetzen der Klassenstruktur
         classElement.innerHTML = f"""
             <div class=\"uml-class-header\">
               <input type=\"text\" value=\"{umlClass['name']}\" data-class-id=\"{umlClass['id']}\"data-field=\"name\" placeholder=\"Klassenname\" style=\"text-align: center; border: none; background-color: white; width:90%\">
@@ -187,61 +226,75 @@ def renderUmlDiagram():
             </div>
           """
         umlDiagram.appendChild(classElement)
-
+    # Events registrieren und Größen anpassen
     addEventListeners()
     resizeUmlClasses()
 
+# ====================================
+# Event-Handling & Benutzerinteraktion
+# ====================================
 
 def addEventListeners():
+    """ Registriert alle EventListener für das UML-Diagramm """"
+    # Klassenname ändern
     for input_elem in document.querySelectorAll(".uml-class-header input"):
         def on_class_input(event):
             classId = int(event.target.getAttribute("data-class-id"))
             updateClassName(classId, event.target.value)
         add_listener(input_elem, "input", on_class_input)
-
+    # Attribute und Methoden bearbeiten
     for input_elem in document.querySelectorAll(".uml-item input"):
         def on_item_input(event):
             classId = int(event.target.getAttribute("data-class-id"))
             field = event.target.getAttribute("data-field")
+            # Attribut ändern
             if event.target.hasAttribute("data-attr-id"):
                 attrId = int(event.target.getAttribute("data-attr-id"))
                 updateAttribute(classId, attrId, field, event.target.value)
+            # Methode ändern
             elif event.target.hasAttribute("data-method-id"):
                 methodId = int(event.target.getAttribute("data-method-id"))
                 updateMethod(classId, methodId, field, event.target.value)
         add_listener(input_elem, "input", on_item_input)
 
+    # Neues Attribut hinzufügen
     for button in document.querySelectorAll(".add-attr"):
         def on_add_attr(event):
             classId = int(event.target.getAttribute("data-class-id"))
             addAttribute(classId)
         add_listener(button, "click", on_add_attr)
-
+    # Neue Methode hinzufügen
     for button in document.querySelectorAll(".add-method"):
         def on_add_method(event):
             classId = int(event.target.getAttribute("data-class-id"))
             addMethod(classId)
         add_listener(button, "click", on_add_method)
 
+    # Attribut löschen
     for button in document.querySelectorAll(".remove-attr"):
         def on_remove_attr(event):
             classId = int(event.target.getAttribute("data-class-id"))
             attrId = int(event.target.getAttribute("data-attr-id"))
             removeAttribute(classId, attrId)
         add_listener(button, "click", on_remove_attr)
-
+    # Methode löschen
     for button in document.querySelectorAll(".remove-method"):
         def on_remove_method(event):
             classId = int(event.target.getAttribute("data-class-id"))
             methodId = int(event.target.getAttribute("data-method-id"))
             removeMethod(classId, methodId)
         add_listener(button, "click", on_remove_method)
-
+    
+    # Zugriffstyp (+ / - / #) ändern
     for button in document.querySelectorAll(".access-btn"):
         add_listener(button, "click", changeAccessModifier)
 
+# ===================
+# Datenaktualisierung
+# ===================
 
 def updateClassName(classId, newName):
+    """ Aktualisiert den Namen einer UML-Klasse """"
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
             umlClass["name"] = newName
@@ -249,32 +302,36 @@ def updateClassName(classId, newName):
             resizeUmlClasses()
             return
 
-
+# =====================
+# Konstruktor-Erkennung
+# =====================
+ 
 def is_constructor_method(value):
+    """ Prüft, ob eine Methode ein Konstruktor ist """
     return str(value).lstrip().startswith("c __init__")
 
-
 def build_constructor_signature(umlClass):
+    """ Erstellt die Konstruktor-Signatur automatisch """
     params = [attr["attr"] for attr in umlClass["attributes"]]
     params = [p for p in params if str(p).strip() != ""]
     params_text = ", ".join(params)
     return f"c __init__({params_text})"
 
-
 def get_attribute_param_list(umlClass):
+    """ Liefert Attribut-Parameterliste """
     params = [attr["attr"] for attr in umlClass["attributes"]]
     return [p.strip() for p in params if str(p).strip() != ""]
 
-
 def sync_constructor_method(umlClass):
+    """ Synchronisiert Konstruktor mit Attributen """
     signature = build_constructor_signature(umlClass)
     for method in umlClass["methods"]:
         if is_constructor_method(method.get("methode")) and method.get("auto", True):
             method["methode"] = signature
             method["access"] = ""
 
-
 def refresh_constructor_inputs(umlClass):
+    """ Aktualisiert Konstruktor-Eingabefelder im UI """
     for method in umlClass["methods"]:
         if is_constructor_method(method.get("methode")):
             input_elem = document.querySelector(
@@ -283,8 +340,12 @@ def refresh_constructor_inputs(umlClass):
             if input_elem:
                 input_elem.value = method["methode"]
 
+# ====================================
+# Daten-Updates (Attribute & Methoden)
+# ====================================
 
 def updateAttribute(classId, attrId, field, value):
+    """ Aktualisiert ein Attribut """
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
             for attribute in umlClass["attributes"]:
@@ -296,8 +357,8 @@ def updateAttribute(classId, attrId, field, value):
                     resizeUmlClasses()
                     return
 
-
 def updateMethod(classId, methodId, field, value):
+    """ Aktualisiert eine Methode """
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
             for method in umlClass["methods"]:
@@ -327,7 +388,11 @@ def updateMethod(classId, methodId, field, value):
                         renderUmlDiagram()
                     return
 
+# ======================
+# Hinzufügen & Entfernen
+# ======================
 
+# Setzt Zugriffstyp
 def setAccessModifier(classId, attrId, methodId, accessType):
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
@@ -341,7 +406,7 @@ def setAccessModifier(classId, attrId, methodId, accessType):
                         method["access"] = accessType
             return
 
-
+# Fügt ein Attribut hinzu
 def addAttribute(classId):
     global nextAttributeId
     for umlClass in umlClasses:
@@ -353,7 +418,7 @@ def addAttribute(classId):
             generateCode()
             return
 
-
+# Fügt eine Methode hinzu
 def addMethod(classId):
     global nextMethodId
     for umlClass in umlClasses:
@@ -364,7 +429,7 @@ def addMethod(classId):
             generateCode()
             return
 
-
+# Entfernt ein Attribut
 def removeAttribute(classId, attrId):
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
@@ -374,7 +439,7 @@ def removeAttribute(classId, attrId):
             generateCode()
             return
 
-
+# Entfernt eine Methode
 def removeMethod(classId, methodId):
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
@@ -383,15 +448,19 @@ def removeMethod(classId, methodId):
             generateCode()
             return
 
+# ====================
+# UI & Hilfsfunktionen
+# ====================
 
 def toggleCodePanel(event=None):
+    """ Öffnet oder schließt das Code-Panel """
     codePanel = document.getElementById("codePanel")
     if codePanel.classList.contains("collapsed"):
         codePanel.classList.remove("collapsed")
     else:
         codePanel.classList.add("collapsed")
 
-
+# Liefert Standardwert für Datentyp
 def getValueForType(type_value):
     typeMapping = {
         "String": '""',
@@ -411,7 +480,7 @@ def getValueForType(type_value):
     }
     return typeMapping.get(type_value, "None")
 
-
+# Liest Parameter aus Konstruktor
 def get_constructor_params(umlClass, method_value, is_auto):
     if is_auto:
         params = [attr["attr"] for attr in umlClass["attributes"]]
@@ -424,25 +493,36 @@ def get_constructor_params(umlClass, method_value, is_auto):
         return []
     return [p.strip() for p in parameters_part.split(",")]
 
+# ===================
+# Methoden-Sortierung
+# ===================
 
 def get_sorted_methods(umlClass):
+    """ Sortiert Methoden so, dass Konstruktoren zuerst kommen """
     methods = list(umlClass["methods"])
     constructors = [m for m in methods if is_constructor_method(m.get("methode"))]
     others = [m for m in methods if not is_constructor_method(m.get("methode"))]
     return constructors + others
 
+# ================
+# Code-Generierung
+# ================
 
 def generateCode():
+    """ Generiert Python-Code aus dem UML-Modell """
     codeContainer = document.getElementById("codeContainer")
     code = ""
     generateKon = False
 
+    # Alle Klassen durchlaufen
     for umlClass in umlClasses:
+        # Klassendefinition generieren
         code += f"<div class=\"code-line\"><span class=\"code-keyword\">class</span> <span class=\"code-class\">{umlClass['name']}</span>:</div>"
 
         """ prüfen ob konstruktor vorhanden ist"""
         for method1 in get_sorted_methods(umlClass):
             if is_constructor_method(method1.get("methode")):
+                # Konstruktor mit Attribute
                 if len(umlClass["attributes"]) > 0:
                     is_auto = method1.get("auto", True)
                     code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self</span>"
@@ -453,7 +533,7 @@ def generateCode():
                             code += ", "
                         code += f"{paramName}:{paramTyp}</span>"
                     code += "):</div>"
-
+                    # Attribute initialisieren
                     for attr in umlClass["attributes"]:
                         attribute = attr["attr"]
                         parts = [a.strip() for a in attribute.split(":")]
@@ -465,6 +545,7 @@ def generateCode():
                             if paramName == attrName:
                                 value = paramName
                         code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attrName} = {value}</div>"
+                # Konstruktor ohne Attribute
                 else:
                     code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self</span>):</div>"
                     code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
@@ -472,7 +553,7 @@ def generateCode():
                 code += "<div class=\"code-line\"></div>"
                 generateKon = True
         
-        """ wenn kein konstruktor vorhanden ist dann generieren """
+        """ Wenn kein Konstruktor vorhanden ist dann automatisch generieren """
         if not generateKon:
             code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self</span>):</div>"
 
@@ -488,7 +569,7 @@ def generateCode():
                 code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
 
             code += "<div class=\"code-line\"></div>"
-
+        # Normale Methoden generieren
         for method in get_sorted_methods(umlClass):
             if str(method["methode"]).strip() == "":
                 continue
@@ -506,13 +587,17 @@ def generateCode():
                 code += f"{paramName}:{paramTyp}</span>"
 
             code += "):</div>"
+
+            # Getter Methode
             if(methodename.startswith("get_")):
                 attr_name = methodename[4:]
                 code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name}</span></div>"
+            # Setter Methode
             elif(methodename.startswith("set_")):
                 attr_name = methodename[4:]
                 param_name = parametersPart[0].split(":")[0].strip() if len(parametersPart) > 0 else "value"
                 code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name} = {param_name}</span></div>"
+            # Sonstige Methoden
             else:
                 code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-comment\"># TODO: Implement {methodename} method</span></div>"
                 """ testen ob return typ vorhanden ist """
@@ -528,8 +613,12 @@ def generateCode():
 
     codeContainer.innerHTML = code
 
+# ========================
+# Modussteuerung & Ansicht
+# ========================
 
 def modusWechselnNachAnsicht(event=None):
+    """ Wechselt in den Ansichtsmodus (nur Lesen) """
     button = document.getElementById("ansichtmodus")
     umlPanel = document.getElementById('umlDiagram')
     umlPanel.classList.add('collapsed')
@@ -537,24 +626,26 @@ def modusWechselnNachAnsicht(event=None):
     ansichtModus()
 
 def modusWechselnNachBearbeiten(event=None):
+    """ Wechselt in den Bearbeitungsmodus """
     button = document.getElementById("bearbeitenModus")
     umlPanel = document.getElementById('umlDiagram')
     button.innerHTML = '<img src = "button/pencil-svgrepo-com.svg" alt= "bearbeiten" class = "button-icon">'
     umlPanel.classList.remove('collapsed')
     renderUmlDiagram()
 
-
 def access_display(value):
+    """ Hilfsfunktion zur Anzeige von Zugriffsmodifikatoren """
     return "null" if value is None else value
 
-
 def ansichtModus():
+    """Rendert das UML-Diagramm im Ansichtsmodus  """
     umlDiagram = document.getElementById("umlDiagram")
     umlDiagram.innerHTML = ""
 
     for umlClass in umlClasses:
         classElement = document.createElement("div")
         classElement.className = "uml-class"
+        # Attribute (readonly)
         attributes_html = "".join(
             [
                 f"""
@@ -565,7 +656,7 @@ def ansichtModus():
                 for attri in umlClass["attributes"]
             ]
         )
-
+        # Methoden (readonly)
         methods_html = "".join(
             [
                 f"""
@@ -576,7 +667,7 @@ def ansichtModus():
                 for method in umlClass["methods"]
             ]
         )
-
+        # Klassendarstellung zusammensetzen
         classElement.innerHTML = f"""
             <div class=\"uml-class-header\">
               <input type=\"text\" value=\"{umlClass['name']}\" data-class-id=\"{umlClass['id']}\" data-field=\"name\" placeholder=\"Klassenname\" readonly style=\"text-align: center; border: none; background-color: white;\">
@@ -598,7 +689,11 @@ def ansichtModus():
     addEventListeners()
     resizeUmlClasses()
 
+# =========================
+# JSON-Export & Import (UI)
+# =========================
 
+# Öffnet den Export-Dialog
 def openExportModal(event=None):
     jsonModalTitle.textContent = "JSON exportieren"
     jsonModalTextarea.value = json.dumps({"umlClasses": umlClasses}, indent=2)
@@ -615,7 +710,7 @@ def openExportModal(event=None):
     jsonModalTextarea.focus()
     jsonModalTextarea.select()
 
-
+# Öffnet den Import-Dialog
 def openImportModal(event=None):
     jsonModalTitle.textContent = "JSON importieren"
     jsonModalTextarea.value = ""
@@ -631,26 +726,33 @@ def openImportModal(event=None):
     jsonModalOverlay.setAttribute("aria-hidden", "false")
     jsonModalTextarea.focus()
 
-
+# Schließt das Modal-Fenster
 def closeJsonModal(event=None):
     jsonModalOverlay.classList.remove("active")
     jsonModalOverlay.setAttribute("aria-hidden", "true")
 
-
+# Kopiert JSON in die Zwischenablage
 def copyJsonToClipboard(event=None):
     text = jsonModalTextarea.value
     if not text:
         return
+    # Prüft, ob die moderne Clipboard-API im Browser verfügbar ist 
     if navigator.clipboard and navigator.clipboard.writeText:
+        """  Versucht, den Text asynchron in die Zwischenablage zu kopieren"""
         promise = navigator.clipboard.writeText(text)
+        # Callback-Funktion bei erfolgreichem Kopieren
         def on_copy_success(e=None):
             closeJsonModal()
+        # Callback-Funktion bei Fehler während des Kopiervorgangs
         def on_copy_error(e=None):
-            jsonModalTextarea.select()
+            """ Markiert den Text zur manuellen Kopie """
+            jsonModalTextarea.select() 
             document.execCommand("Kopieren")
             closeJsonModal()
+        # Erstellt Proxies für die Callback-Funktionen (Pyodide erforderlich)
         success_proxy = create_proxy(on_copy_success)
         error_proxy = create_proxy(on_copy_error)
+        """  Speichert die Proxies, um Garbage Collection zu verhindern """
         event_proxies.append(success_proxy)
         event_proxies.append(error_proxy)
         promise.then(success_proxy).catch(error_proxy)
@@ -659,14 +761,14 @@ def copyJsonToClipboard(event=None):
         document.execCommand("Kopieren")
         closeJsonModal()
 
-
+# Liest den JSON-Text aus dem Export-Textfeld 
 def downloadJsonFromTextarea(event=None):
     text = jsonModalTextarea.value.strip()
     if not text:
         return
     downloadJsonFile(text)
 
-
+# Lädt JSON als Datei herunter
 def downloadJsonFile(text):
     filename = "uml-classes.json"
     blob = window.Blob.new([text], {"type": "application/json"})
@@ -679,13 +781,13 @@ def downloadJsonFile(text):
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
 
-
+# Öffnet Dateiauswahl für JSO
 def triggerJsonFilePicker(event=None):
     if jsonFileInput:
         jsonFileInput.value = ""
         jsonFileInput.click()
 
-
+# Liest ausgewählte JSON-Datei
 def handleJsonFileInput(event=None):
     files = jsonFileInput.files
     if not files or files.length == 0:
@@ -693,11 +795,12 @@ def handleJsonFileInput(event=None):
     file = files.item(0)
     reader = window.FileReader.new()
 
+    # Wird aufgerufen, wenn eine JSON-Datei ausgewählt wird
     def on_load(e=None):
         jsonModalTextarea.value = reader.result
         jsonModalTextarea.focus()
         importJsonState()
-
+    # Fehler-Handler für Datei-Lesevorgang
     def on_error(e=None):
         window.alert("Datei konnte nicht gelesen werden.")
 
@@ -709,16 +812,24 @@ def handleJsonFileInput(event=None):
     reader.addEventListener("error", error_proxy)
     reader.readAsText(file)
 
+# ===================
+# JSON Normalisierung
+# ===================
 
 def normalizeImportedClasses(data):
+    """ Normalisiert die importierten UML-Klassen aus JSON """
+    # Falls JSON ein Array von Klassen ist, verwenden, sonst nach "umlClasses" suchen
     incoming = data if isinstance(data, list) else data.get("umlClasses")
     if not isinstance(incoming, list):
         raise ValueError('Ungültiges JSON: erwartet ein Array oder { "umlClasses": [...] }.')
 
     normalized = []
+    # Prüft, ob eine gültige ID vorhanden ist, sonst Index +1 verwenden
     for index, umlClass in enumerate(incoming):
         class_id = umlClass.get("id")
         class_id = class_id if isinstance(class_id, (int, float)) and math.isfinite(class_id) else index + 1
+
+        # Normale Struktur für UML-Klassen erzeugen
         normalized.append(
             {
                 "id": class_id,
@@ -743,8 +854,13 @@ def normalizeImportedClasses(data):
         )
     return normalized
 
+# =================
+# IDs aktualisieren
+# =================
 
 def updateNextIdsFromState():
+    """ Aktualisiert die globalen nächsten IDs für 
+       Attribute und Methoden """
     global nextAttributeId, nextMethodId
     maxAttrId = 0
     maxMethodId = 0
@@ -758,12 +874,18 @@ def updateNextIdsFromState():
     nextAttributeId = maxAttrId + 1
     nextMethodId = maxMethodId + 1
 
+# ===========
+# JSON Import
+# ===========
 
 def importJsonState(event=None):
+    """ Liest die JSON-Daten aus dem Modal und 
+        importiert sie in das UML-System """
+
     global umlClasses
     raw = jsonModalTextarea.value.strip()
     if not raw:
-        window.alert("Bitte JSON-Daten einfügen.")
+        window.alert("Bitte JSON-Daten einfügen.") 
         return
     try:
         data = json.loads(raw)
@@ -778,8 +900,12 @@ def importJsonState(event=None):
     except Exception:
         window.alert("Ungültiges JSON-Format.")
 
+# ================================
+# DOMContentLoaded Initialisierung
+# ================================
 
 def on_dom_content_loaded(event=None):
+    """ Wird ausgeführt, wenn DOM fertig geladen ist """
     renderUmlDiagram()
     generateCode()
     add_listener(document.getElementById("ansichtmodus"), "click", modusWechselnNachAnsicht)
@@ -788,8 +914,8 @@ def on_dom_content_loaded(event=None):
     add_listener(document.getElementById("exportJson"), "click", openExportModal)
     add_listener(document.getElementById("importJson"), "click", openImportModal)
 
-
 def init_handlers():
+    """ Initialisiert Event-Handler beim Laden der Seite """
     if document.readyState == "loading":
         add_listener(document, "DOMContentLoaded", on_dom_content_loaded)
     else:
@@ -797,5 +923,5 @@ def init_handlers():
 
     add_listener(jsonFileInput, "change", handleJsonFileInput)
 
-
+# Event-Handler initialisieren
 init_handlers()
