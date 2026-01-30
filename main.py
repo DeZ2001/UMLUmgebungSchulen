@@ -326,7 +326,7 @@ def renderUmlDiagram():
 # ====================================
 
 def addEventListeners():
-    """ Registriert alle EventListener für das UML-Diagramm """"
+    """ Registriert alle EventListener für das UML-Diagramm """
     # Klassenname ändern
     for input_elem in document.querySelectorAll(".uml-class-header input"):
         def on_class_input(event):
@@ -388,7 +388,7 @@ def addEventListeners():
 
 
 def updateClassName(classId, newName):
-    """ Aktualisiert den Namen einer UML-Klasse """"
+    """ Aktualisiert den Namen einer UML-Klasse """
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
             umlClass["name"] = newName
