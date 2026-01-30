@@ -104,8 +104,8 @@
       }
           
       .uml-diagram {
-        width: auto;
-        min-width: 320px;
+        width: 75%;
+        min-width: 240px;
         height: auto;
         display: flex;
         flex-direction: column;

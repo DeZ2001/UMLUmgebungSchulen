@@ -120,10 +120,9 @@ def measureTextWidth(text=""):
     return context.measureText(text).width
 
 def calculateClassWidth(umlClass):
-    """ Berechnet die optimale Klassenbreite """
-    padding = 80
-    minWidth = 365
-
+    scale = 0.75
+    padding = 80 * scale
+    minWidth = 365 * scale
     umlDiagram = document.getElementById("umlDiagram")
     # Containerbreite bestimmen
     containerWidth = (
@@ -132,7 +131,7 @@ def calculateClassWidth(umlClass):
         or window.innerWidth
     )
     containerWidth -= 40
-    maxWidth = max(minWidth, containerWidth)
+    maxWidth = max(minWidth, containerWidth * scale)
 
     # Maximale Textbreite ermitteln
     maxTextWidth = measureTextWidth(umlClass["name"])
@@ -141,7 +140,7 @@ def calculateClassWidth(umlClass):
     for method in umlClass["methods"]:
         maxTextWidth = max(maxTextWidth, measureTextWidth(method["methode"]))
 
-    return min(maxWidth, max(minWidth, math.ceil(maxTextWidth + padding)))
+    return min(maxWidth, max(minWidth, math.ceil((maxTextWidth + padding))))
 
 def resizeUmlClasses():
     """ Die Breite des UML-Diagramm anpassen"""
