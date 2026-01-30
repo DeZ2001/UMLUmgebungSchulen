@@ -1,17 +1,25 @@
 <!DOCTYPE html>
 <html>
   <head>
+     <!-- Dokument Zeichensatz festlegen -->
     <meta charset="UTF-8">
+     <!-- Seitentitel -->
     <title>Hello World mit PyScript + Mermaid</title>
+     <!-- PyScript CSS einbinden -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.2.1/core.css">
+     <!-- PyScript JavaScript einbinden -->
     <script type="module" src="https://pyscript.net/releases/2024.2.1/core.js"></script>
+    <!-- Eigene CSS Datei -->
     <link rel="stylesheet" href="styles.css">
   </head>
 
   <body>
+    <!-- Hauptcontainer der Seite -->
     <div class="container">
+      <!-- Kopfbereich mit Titel und Steuerungen -->
       <div class="header">
         <h1>Dynamische UML-zu-Code-Generierung</h1>
+        <!-- Steuerungsbuttons -->
         <div class="controls">
           <button id="resetSvg" class="btn btn-svg tooltip"><img src ="button/reset-svgrepo-com.svg" alt= "resetPosition" class = "button-icon"><span class="tooltiptext">Position zurücksetzen</span></button>
           <button id="exportJson" class="btn btn-svg tooltip"><img src ="button/export-2-svgrepo-com.svg" alt= "exportJson" class = "button-icon"><span class="tooltiptext">JSON exportieren</span></button>
@@ -21,10 +29,11 @@
           <button id="toggleCode" class="btn btn-svg tooltip"><img src ="button/code-svgrepo-com.svg" alt= "PythoenCode" class = "button-icon"><span class="tooltiptext">Code ein/ausblenden</span></button>
         </div>
       </div>
-
+      <!-- Panels für UML Diagramm und Code -->
       <div class="panels-container">
+        <!-- UML Diagramm Bereich -->
         <div class="uml-diagram" id="umlDiagram"></div>
-
+        <!-- Generierter Python Code Bereich -->
         <div class="panel code-panel" id="codePanel">
           <div class="panel-header">Generierter Python Code</div>
           <div class="panel-content">
@@ -35,26 +44,33 @@
         </div>
       </div>
     </div>
-
+    <!-- Modal für JSON Export/Import -->
     <div class="modal-overlay" id="jsonModalOverlay" aria-hidden="true">
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="jsonModalTitle">
         <div class="modal-header">
           <div id="jsonModalTitle">JSON exportieren</div>
+           <!-- Modal schließen Button -->
           <button class="btn btn-svg" id="jsonModalClose">×</button>
         </div>
         <div class="modal-body">
+          <!-- JSON Textarea -->
           <textarea id="jsonModalTextarea" spellcheck="false"></textarea>
         </div>
         <div class="modal-actions">
+          <!-- Kopieren Button -->
           <button id="jsonModalPrimary" class="btn">Kopieren</button>
           <button id="jsonModalTertiary" class="btn btn-label">Als JSON herunterladen</button>
           <button id="jsonModalSecondary" class="btn btn-svg">Schließen</button>
         </div>
       </div>
     </div>
+
+    <!-- Unsichtbares File Input für JSON Import -->
     <input id="jsonFileInput" type="file" accept="application/json,.json" style="display: none;">
 
+     <!-- Python Script einbinden -->
     <py-script src="main.py"></py-script>
+    <!-- Drag & Drop Skript -->
     <script src="drag.js"></script>
   </body>
 </html>
