@@ -15,13 +15,19 @@ umlClasses = [
         "attributes": [
         ],
         "methods": [
+            {
+                "id": 1,
+                "methode": "c __init__()",
+                "access": "",
+                "auto": True
+            }
         ],
     }
 ]
 # Zähler für eindeutige Attribut-IDs
 nextAttributeId = 1
 # Zähler für eindeutige Methoden-IDs
-nextMethodId = 1
+nextMethodId = 2
 # Schriftart für Textmessungen im UI
 UI_FONT = "15px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
 # Textbreiten messen
@@ -68,12 +74,12 @@ def get_attr_type(attr_value):
 def build_getter_signature(attr_name, attr_type):
     """Build getter method signature"""
     return_type = f":{attr_type}" if attr_type else ""
-    return f"{generate_getter_name(attr_name)}(){return_type}"
+    return f"{generate_getter_name(attr_name)}():{return_type}"
 
 def build_setter_signature(attr_name, attr_type):
     """Build setter method signature"""
     param_type = f":{attr_type}" if attr_type else ""
-    return f"{generate_setter_name(attr_name)}(value{param_type})"
+    return f"{generate_setter_name(attr_name)}({attr_name}{param_type})"
 
 def get_existing_getter_setter(umlClass, attr_name):
     """Überprüft, ob Getter/Setter-Methoden existieren"""
@@ -174,6 +180,7 @@ def changeAccessModifier(event):
             btn.classList.remove("selected")
     # Aktuelle Button markieren
     target.classList.add("selected")
+    generateCode()
 
 def getSelected(current, expected):
     """ Prüft, ob ein Button ausgewählt ist """
@@ -284,12 +291,11 @@ def renderUmlDiagram():
                     <button class=\"remove-method\" id=\"remove\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\">×</button>
                   </div>
                     """
-                    if not is_constructor_method(method.get("methode"))
+                    if not is_constructor_method(method.get("methode")) 
                     else f"""
                   <div class=\"uml-item\">
                     <div style=\"display: inline-block;\"></div>
                     <input type=\"text\" value=\"{method['methode']}\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\" data-field=\"methode\" placeholder=\"Methodenname(Parameter):Rückgabetyp\">
-                    <button class=\"remove-method\" id=\"remove\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\">×</button>
                   </div>
                     """
                 )
@@ -305,14 +311,14 @@ def renderUmlDiagram():
               <div class=\"attributes-list\" data-class-id=\"{umlClass['id']}\">
                 {attributes_html}
               </div>
-              <button class=\"add-attr add-btn\" data-class-id=\"{umlClass['id']}\" style=\"width:100%; background-color: white; color:#ddd !important;\">+ </button>
+              <button class=\"add-attr add-btn\" data-class-id=\"{umlClass['id']}\" style=\"width:100%; background-color: white; color:#000000 !important;\">+ </button>
             </div>
 
             <div class=\"uml-class-methods\">
               <div class=\"methods-list\" data-class-id=\"{umlClass['id']}\">
                 {methods_html}
               </div>
-              <button class=\"add-method add-btn\" data-class-id=\"{umlClass['id']}\" style=\"width:100%; background-color: white; color:#ddd !important;\">+ </button>
+              <button class=\"add-method add-btn\" data-class-id=\"{umlClass['id']}\" style=\"width:100%; background-color: white; color:#000000 !important;\">+ </button>
             </div>
           """
         umlDiagram.appendChild(classElement)
@@ -433,6 +439,16 @@ def refresh_constructor_inputs(umlClass):
             )
             if input_elem:
                 input_elem.value = method["methode"]
+                
+def refresh_inputs(umlClass):
+    """ Aktualisiert Eingabefelder im UI """
+    for method in umlClass["methods"]:
+        input_elem = document.querySelector(
+            f'input[data-method-id="{method["id"]}"][data-field="methode"]'
+        )
+        if input_elem:
+            input_elem.value = method["methode"]
+
 
 # ====================================
 # Daten-Updates (Attribute & Methoden)
@@ -500,6 +516,8 @@ def update_getter_setter_names(umlClass, old_attr_name, new_attr_name):
                 method["methode"] = f"{new_method_name}{params_part}"
             else:
                 method["methode"] = new_method_name
+        
+        refresh_inputs(umlClass)
 
 
 def updateMethod(classId, methodId, field, value):
@@ -661,6 +679,9 @@ def handle_setter_click(event):
                     return
 
 def add_getter_method(umlClass, attr_name, attr_type):
+    if not attr_type or not attr_name:
+        window.alert("Um eine Getter-Methode zu erstellen, muss der Attributname und der Typ angegeben werden.")
+        return
     """Fügt eine Getter-Methode hinzu"""
     global nextMethodId
     getter_signature = build_getter_signature(attr_name, attr_type)
@@ -679,6 +700,9 @@ def add_getter_method(umlClass, attr_name, attr_type):
     nextMethodId += 1
 
 def add_setter_method(umlClass, attr_name, attr_type):
+    if not attr_type or not attr_name:
+        window.alert("Um eine Setter-Methode zu erstellen, muss der Attributname und der Typ angegeben werden.")
+        return
     """Fügt eine Setter-Methode hinzu"""
     global nextMethodId
     setter_signature = build_setter_signature(attr_name, attr_type)
@@ -889,64 +913,59 @@ def generateCode():
     """ Generiert Python-Code aus dem UML-Modell """
     codeContainer = document.getElementById("codeContainer")
     code = ""
-    generateKon = False
 
     # Alle Klassen durchlaufen
     for umlClass in umlClasses:
         # Klassendefinition generieren
         code += f"<div class=\"code-line\"><span class=\"code-keyword\">class</span> <span class=\"code-class\">{umlClass['name']}</span>:</div>"
 
-        """ prüfen ob konstruktor vorhanden ist"""
-        for method1 in get_sorted_methods(umlClass):
-            ' Überprüfen, ob es sich um den Konstruktor handelt'
-            if is_constructor_method(method1.get("methode")):
-                # Konstruktor mit Attribute
-                if len(umlClass["attributes"]) > 0:
-                    is_auto = method1.get("auto", True)
-                    code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self</span>"
-                    parametersPart = get_constructor_params(umlClass, method1.get("methode"), is_auto)
-                    for param in parametersPart:
-                        paramName, paramTyp = [p.strip() for p in param.split(":")]
-                        if param in parametersPart:
-                            code += ", "
-                        code += f"{paramName}:{paramTyp}</span>"
-                    code += "):</div>"
-                    # Attribute initialisieren
-                    for attr in umlClass["attributes"]:
-                        attribute = attr["attr"]
-                        parts = [a.strip() for a in attribute.split(":")]
-                        attrName = parts[0] if len(parts) > 0 else ""
-                        attrType = parts[1] if len(parts) > 1 else ""
-                        value = getValueForType(attrType)
-                        for param in parametersPart:
-                            paramName = param.split(":")[0].strip()
-                            if paramName == attrName:
-                                value = paramName
-                        code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attrName} = {value}</div>"
-                # Konstruktor ohne Attribute
-                else:
-                    code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self</span>):</div>"
-                    code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
+        """ Konstruktor generieren """
+        constructor_method = None
+        for method in umlClass["methods"]:
+            if is_constructor_method(method.get("methode")):
+                constructor_method = method
+                break
+        if constructor_method:
+            methodename = "__init__"
+            code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">{methodename}</span>(<span class=\"code-keyword\">self</span>"
 
-                code += "<div class=\"code-line\"></div>"
-                generateKon = True
-        
-        """ Wenn kein Konstruktor vorhanden ist dann automatisch generieren """
-        if not generateKon:
-            code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">__init__</span>(<span class=\"code-keyword\">self</span>):</div>"
+            params_text = ""
+            if "(" in constructor_method["methode"] and ")" in constructor_method["methode"]:
+                params_text = constructor_method["methode"].split("(", 1)[1].split(")", 1)[0].strip()
+            if params_text:
+                parameters = params_text.split(",")
+                for i, param in enumerate(parameters):
+                    param = param.strip()
+                    code += ", "
+                    code += f"{param}"
 
-            if len(umlClass["attributes"]) > 0:
+            code += "):</div>"
+
+            # Konstruktor-Body generieren
+            param_list = get_constructor_params(umlClass, constructor_method["methode"], constructor_method.get("auto", True))
+            for param in param_list:
+                paramName = param.split(":")[0].strip() if ":" in param else param.strip()
+                paramAccess = ""
+                # Zugriffstyp des Attributs ermitteln
                 for attr in umlClass["attributes"]:
                     attribute = attr["attr"]
                     parts = [a.strip() for a in attribute.split(":")]
-                    attrName = parts[0] if len(parts) > 0 else ""
-                    attrType = parts[1] if len(parts) > 1 else ""
-                    value = getValueForType(attrType)
-                    code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attrName} = {value}</div>"
-            else:
+                    current_attr_name = parts[0] if len(parts) > 0 else ""
+                    if current_attr_name == paramName:
+                        paramAccess = attr.get("access", "")
+                        break
+                if paramAccess == "-":  # privates Attribut
+                    vorParam = "__"
+                elif paramAccess == "#":  # protected Attribut
+                    vorParam = "_"
+                else:  # öffentliches Attribut
+                    vorParam = ""
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{vorParam}{paramName} = {paramName}</span></div>"
+            if not param_list:
                 code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
-
             code += "<div class=\"code-line\"></div>"
+        
+               
         # Normale Methoden generieren
         for method in get_sorted_methods(umlClass):
             if str(method["methode"]).strip() == "":
@@ -955,8 +974,14 @@ def generateCode():
                 continue
             
             methodename = method["methode"].split("(")[0].strip()
-            code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">{methodename}</span>(<span class=\"code-keyword\">self</span>"
-
+            methodAccess = method.get("access", "")
+            if methodAccess == "-":  # privates Attribut
+                vorParam = "__"
+            elif methodAccess == "#":  # protected Attribut
+                vorParam = "_"
+            else:  # öffentliches Attribut
+                vorParam = ""
+            code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">def</span> <span class=\"code-function\">{vorParam}{methodename}</span>(<span class=\"code-keyword\">self</span>"
             if "(" in method["methode"] and ")" in method["methode"]:
                 params_text = method["methode"].split("(", 1)[1].split(")", 1)[0].strip()
                 if params_text:
@@ -964,22 +989,55 @@ def generateCode():
                     parameters = params_text.split(",")
                     for i, param in enumerate(parameters):
                         param = param.strip()
+                        # Prüfen, ob Typ angegeben ist
                         if ":" in param:
                             try:
+                                vorParam = ""
+                                # Typ und Name extrahieren
                                 paramName, paramTyp = [p.strip() for p in param.split(":", 1)]
+                                
+                                for attr in umlClass["attributes"]:
+                                    attribute = attr["attr"]
+                                    parts = [a.strip() for a in attribute.split(":")]
+                                    current_attr_name = parts[0] if len(parts) > 0 else ""
+                                    if current_attr_name == paramName:
+                                        paramTypeFromAttr = parts[1] if len(parts) > 1 else ""
+                                        if paramTyp != paramTypeFromAttr:
+                                            break
+                                        else:
+                                            for attr in umlClass["attributes"]:
+                                                attribute = attr["attr"]
+                                                parts = [a.strip() for a in attribute.split(":")]
+                                                current_attr_name = parts[0] if len(parts) > 0 else ""
+                                                if current_attr_name == paramName:
+                                                    paramAccess = attr.get("access", "")
+                                                    if paramAccess == "-":  # privates Attribut
+                                                        vorParam = "__"
+                                                    elif paramAccess == "#":  # protected Attribut
+                                                        vorParam = "_"
+                                        break
                                 if i > 0:
                                     code += ", "
-                                code += f"{paramName}:{paramTyp}"
+                                code += f"{vorParam}{paramName}:{paramTyp}"
                             except:
                                 if i > 0:
                                     code += ", "
                                 code += f"{param}"
                         else:
+                            # Kein Typ angegeben, meldung ausgeben
                             if i > 0:
                                 code += ", "
-                            code += f"{param}"
+                            code += f"{param}  <span class=\"code-warning\"># !! Kein Typ angegeben</span>"
 
-            code += "):</div>"
+            code += "):"
+            
+            # Methode Rückgabewert
+            for methode in umlClass["methods"]:
+                if methode["id"] == method["id"]:
+                    if "):" in methode["methode"] and methode["methode"].split("):")[-1].strip() != "":
+                        return_type = methode["methode"].split("):")[-1].strip()
+                        code += f"&nbsp; -> <span class=\"code-type\">{return_type}</span></div>"
+                    break
             
             parametersPart = []
             if "(" in method["methode"] and ")" in method["methode"]:
@@ -987,9 +1045,11 @@ def generateCode():
                 if params_text:
                     parametersPart = [p.strip() for p in params_text.split(",")]
             
+            # Getter Methode
             if(methodename.startswith("get_")):
                 attr_name = methodename[4:]
                 code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name}</span></div>"
+            
             # Setter Methode
             elif(methodename.startswith("set_")):
                 attr_name = methodename[4:]
@@ -1012,13 +1072,13 @@ def generateCode():
                 code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name} = {param_name}</span></div>"
             # Sonstige Methoden
             else:
-                code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
+                #code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
                 """ testen ob return typ vorhanden ist """
                 methodeType = ""
-                if ":" in method["methode"] and method["methode"].split("):")[-1].strip() != "":
+                if "):" in method["methode"] and method["methode"].split("):")[-1].strip() != "":
                     methodeType = method["methode"].split("):")[-1].strip()
                 if methodeType != "":
-                    code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\"> {getValueForType(methodeType)} </span> </div>"
+                    code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span> {getValueForType(methodeType)} </span> </div>"
                 else:
                     code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
 

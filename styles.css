@@ -229,6 +229,7 @@
           
       .code-keyword {
         color: #0D6EFD;
+        font-weight: bold;
       }
           
       .code-function {
@@ -448,6 +449,14 @@
     .tooltip:hover .tooltiptext {
       visibility: visible!important;
       opacity: 1!important;
+    }
+
+    .uml-item input[placeholder="Attributname:Datentyp"]::placeholder {
+    font-size: 14px;
+    }
+
+    .uml-item input[placeholder="Methodenname(Parameter):Rückgabetyp"]::placeholder {
+        font-size: 10px;
     }
     
     
