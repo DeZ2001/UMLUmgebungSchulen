@@ -73,13 +73,27 @@ class UMLDragger {
 
   // Position in localStorage speichern
   savePosition() {
-    const position = JSON.parse(localStorage.getItem('umlPosition')) || '{}';
-    position[this.classId] =
-    {
+    let positions;
+    try {
+      positions = JSON.parse(localStorage.getItem("umlPosition")) || {};
+    } catch (e) {
+      // Falls Parsing fehlschlägt, leeres Objekt verwenden
+      console.warn("Failed to parse umlPosition from localStorage:", e);
+      positions = {};
+    }
+    
+    // sicherstellen, dass positions ein Objekt ist
+    if (typeof positions !== 'object' || positions === null) {
+      positions = {};
+    }
+    
+    // Aktuelle Position speichern
+    positions[this.classId] = {
       x: this.currentX,
       y: this.currentY
     };
-    localStorage.setItem('umlPosition', JSON.stringify(position));
+    
+    localStorage.setItem("umlPosition", JSON.stringify(positions));
   }
 
   // Gespeicherte Position laden

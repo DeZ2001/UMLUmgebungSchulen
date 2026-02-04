@@ -205,9 +205,8 @@ def measureTextWidth(text=""):
     return context.measureText(text).width
 
 def calculateClassWidth(umlClass):
-    scale = 0.75
-    padding = 80 * scale
-    minWidth = 365 * scale
+    padding = 100
+    minWidth = 300
     umlDiagram = document.getElementById("umlDiagram")
     # Containerbreite bestimmen
     containerWidth = (
@@ -216,7 +215,7 @@ def calculateClassWidth(umlClass):
         or window.innerWidth
     )
     containerWidth -= 40
-    maxWidth = max(minWidth, containerWidth * scale)
+    maxWidth = max(minWidth, containerWidth)
 
     # Maximale Textbreite ermitteln
     maxTextWidth = measureTextWidth(umlClass["name"])
@@ -244,6 +243,15 @@ def resizeUmlClasses():
 
 def renderUmlDiagram():
     """ Erstellt das komplette UML-Diagramm neu """
+    # speichert das aktive Element
+    active_element = document.activeElement
+    active_id = active_element.id if active_element else None
+    active_attr_id = active_element.getAttribute("data-attr-id") if active_element else None
+    active_method_id = active_element.getAttribute("data-method-id") if active_element else None
+    active_class_id = active_element.getAttribute("data-class-id") if active_element else None
+    active_field = active_element.getAttribute("data-field") if active_element else None
+    cursor_position = active_element.selectionStart if hasattr(active_element, 'selectionStart') else None
+    
     umlDiagram = document.getElementById("umlDiagram")
     umlDiagram.innerHTML = ""
     for umlClass in umlClasses:
@@ -326,6 +334,27 @@ def renderUmlDiagram():
     addEventListeners()
     resizeUmlClasses()
     updateGetterSetterButtons()
+    
+    # zurück zum aktiven Element
+    if active_element and active_element.tagName == "INPUT":
+        # versuche, das gleiche Eingabefeld wieder zu fokussieren
+        if active_method_id:
+            new_input = document.querySelector(
+                f'input[data-method-id="{active_method_id}"][data-field="{active_field}"][data-class-id="{active_class_id}"]'
+            )
+        elif active_attr_id:
+            new_input = document.querySelector(
+                f'input[data-attr-id="{active_attr_id}"][data-field="{active_field}"][data-class-id="{active_class_id}"]'
+            )
+        else:
+            new_input = document.querySelector(
+                f'.uml-class-header input[data-field="name"][data-class-id="{active_class_id}"]'
+            )
+        
+        if new_input:
+            new_input.focus()
+            if cursor_position is not None and hasattr(new_input, 'setSelectionRange'):
+                new_input.setSelectionRange(cursor_position, cursor_position)
 
 # ====================================
 # Event-Handling & Benutzerinteraktion
@@ -974,6 +1003,7 @@ def generateCode():
                 continue
             
             methodename = method["methode"].split("(")[0].strip()
+            #checken des Zugriffstyps eine Methode
             methodAccess = method.get("access", "")
             if methodAccess == "-":  # privates Attribut
                 vorParam = "__"
