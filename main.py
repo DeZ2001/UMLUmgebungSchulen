@@ -964,9 +964,24 @@ def generateCode():
             if params_text:
                 parameters = params_text.split(",")
                 for i, param in enumerate(parameters):
+                    # Zugriffstyp des Attributs ermitteln
+                    for attr in umlClass["attributes"]:
+                        attribute = attr["attr"]
+                        parts = [a.strip() for a in attribute.split(":")]
+                        current_attr_name = parts[0] if len(parts) > 0 else ""
+                        if current_attr_name == param.split(":")[0].strip() if ":" in param else param.strip():
+                            paramAccess = attr.get("access", "")
+                            break
+                    if paramAccess == "-":  # privates Attribut
+                        vorParam = "__"
+                    elif paramAccess == "#":  # protected Attribut
+                        vorParam = "_"
+                    else:  # öffentliches Attribut
+                        vorParam = ""
+                        
                     param = param.strip()
                     code += ", "
-                    code += f"{param}"
+                    code += f"{vorParam}{param}"
 
             code += "):</div>"
 
