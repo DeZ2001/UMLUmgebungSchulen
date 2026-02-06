@@ -30,20 +30,15 @@ class UMLDragger {
 
   // Drag starten
   dragStart(e) {
-    // Input oder Button nicht ziehen
-    if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') {
+    if (e.target !== this.umlElement) {
       return;
     }
-    if (this.umlElement.contains(e.target)) {
-      this.initialX = e.clientX - this.xOffset;
-      this.initialY = e.clientY - this.yOffset;
-      if (this.umlElement.contains(e.target)) {
-        this.isDragging = true;
-        this.umlElement.style.cursor = 'grabbing';
-        this.umlElement.style.boxShadow = '0 0 0 rgba(0,0,0,0.3)';
-        this.umlElement.style.transition = 'box-shadow 0.2s ease';
-      }
-    }
+    this.initialX = e.clientX - this.xOffset;
+    this.initialY = e.clientY - this.yOffset;
+    this.isDragging = true;
+    this.umlElement.style.cursor = 'grabbing';
+    this.umlElement.style.boxShadow = '0 0 0 rgba(0,0,0,0.3)';
+    this.umlElement.style.transition = 'box-shadow 0.2s ease';
   }
 
   // Drag bewegen
@@ -100,9 +95,27 @@ class UMLDragger {
   loadPosition() {
     const saved = localStorage.getItem('umlPosition');
     if (saved) {
-      const position = JSON.parse(saved);
-      this.xOffset = position.x;
-      this.yOffset = position.y;
+      let position = null;
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          if (this.classId && parsed[this.classId]) {
+            position = parsed[this.classId];
+          } else if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+            position = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse umlPosition from localStorage:', e);
+      }
+
+      if (position) {
+        this.xOffset = position.x;
+        this.yOffset = position.y;
+      } else {
+        this.xOffset = 0;
+        this.yOffset = 0;
+      }
       this.setTranslate(this.xOffset, this.yOffset);
     }
   }

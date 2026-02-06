@@ -104,13 +104,18 @@
       }
           
       .uml-diagram {
-        width: 75%;
+        width: fit-content;
+        max-width: 100%;
         min-width: 240px;
         height: auto;
         display: flex;
         flex-direction: column;
         z-index: 100;
         align-items: flex-start;
+        padding: 12px;
+        border: 2px dashed #9aa5b1;
+        border-radius: 12px;
+        cursor: grab;
       }
           
       .uml-class {
@@ -119,6 +124,7 @@
         cursor: move;
 
       }
+
       
           
       .uml-class-header {
