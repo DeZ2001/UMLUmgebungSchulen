@@ -113,11 +113,9 @@
         align-items: flex-start;
       }
           
-      .uml-class {
-        
-        transition: all 0.3s ease;
-        cursor: move;
-
+      .uml-class { 
+        transition: all 0.3s ease; 
+        cursor: move; 
       }
       
           
@@ -128,6 +126,7 @@
         padding: 10px;
         text-align: center;
         font-weight: bold;
+
       }
       
       .uml-class-header input {
@@ -140,6 +139,8 @@
         border-top: none !important;
         border: #3498db 2px solid;
         padding: 10px;
+        overflow: hidden;
+
       }
           
       .uml-item {
@@ -151,7 +152,16 @@
         width: 100%;
         position: relative;
         transition: background-color 0.2s;
+        width: 100%;
+        overflow: hidden;
       }
+      .uml-view-text,
+      .uml-item input {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+
 
       .uml-item input {
         flex: 1; 
@@ -287,6 +297,11 @@
       #uml-class.dragging {
         cursor: grabbing;
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
+
+      .uml-class {
+        box-sizing: border-box;
+        max-width: 100%;
       }
 
       
@@ -450,12 +465,53 @@
       opacity: 1!important;
     }
 
-    .uml-item input[placeholder="Attributname:Datentyp"]::placeholder {
-    font-size: 14px;
+    .uml-view-text {
+      flex:1;
+      min-width:0;             
+      max-width:100%;
+      width: 100%;
+      border: none;
+      background: white;
+      resize: none;
+      padding: 5px;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.4;
+
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+
+      overflow: hidden; 
+    } 
+
+    .uml-view-title{
+      width: 100%;
+      border: none;
+      background: white;
+      resize: none;
+      text-align: center;
+      font-weight: 700;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.4;
+
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+
+      overflow: hidden;
+    }
+    .uml-item .uml-view-text,
+    .uml-item .uml-view-title {
+      flex: 1;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
-    .uml-item input[placeholder="Methodenname(Parameter):Rückgabetyp"]::placeholder {
-        font-size: 10.8px;
+    .code-line{
+      white-space: pre-wrap;
+      overflow-wrap: anywhere; 
+      word-break: break-word;   
     }
-    
-    

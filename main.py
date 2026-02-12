@@ -1155,56 +1155,59 @@ def access_display(value):
     return "null" if value is None else value
 
 def ansichtModus():
-    """Rendert das UML-Diagramm im Ansichtsmodus  """
+    """Rendert das UML-Diagramm im Ansichtsmodus"""
     umlDiagram = document.getElementById("umlDiagram")
     umlDiagram.innerHTML = ""
 
     for umlClass in umlClasses:
         classElement = document.createElement("div")
         classElement.className = "uml-class"
-        # Attribute (readonly)
+
+        # Attribute (readonly, multiline)
         attributes_html = "".join(
             [
                 f"""
-                  <div class=\"uml-item\">
-                    <input type=\"text\" value=\"{access_display(attri.get('access'))} {attri['attr']}\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\" data-field=\"attr\" placeholder=\"Attributname:Datentyp\" readonly>
-                  </div>
+                    <div class="uml-item">
+                        <div class="uml-view-text">{access_display(attri.get('access'))} {attri['attr']}</div>
+                    </div>
                 """
                 for attri in umlClass["attributes"]
             ]
         )
-        # Methoden (readonly)
+
+        # Methoden (readonly, multiline)
         methods_html = "".join(
             [
                 f"""
-                  <div class=\"uml-item\">
-                    <input type=\"text\" value=\"{access_display(method.get('access'))} {method['methode']}\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\" data-field=\"methode\" placeholder=\"Methodenname(Parameter):Rückgabetyp\" readonly>
+                  <div class="uml-item">
+                    <div class="uml-view-text">{access_display(method.get('access'))} {method['methode']}</div>
                   </div>
                 """
                 for method in umlClass["methods"]
             ]
         )
-        # Klassendarstellung zusammensetzen
+
         classElement.innerHTML = f"""
-            <div class=\"uml-class-header\">
-              <input type=\"text\" value=\"{umlClass['name']}\" data-class-id=\"{umlClass['id']}\" data-field=\"name\" placeholder=\"Klassenname\" readonly style=\"text-align: center; border: none; background-color: white;\">
+            <div class="uml-class-header">
+              <textarea class="uml-view-title" readonly>{umlClass['name']}</textarea>
             </div>
-            <div class=\"uml-class-attributes\">
-              <div class=\"attributes-list\" data-class-id=\"{umlClass['id']}\">
+            <div class="uml-class-attributes">
+              <div class="attributes-list" data-class-id="{umlClass['id']}">
                 {attributes_html}
               </div>
             </div>
-
-            <div class=\"uml-class-methods\">
-              <div class=\"methods-list\" data-class-id=\"{umlClass['id']}\">
+            <div class="uml-class-methods">
+              <div class="methods-list" data-class-id="{umlClass['id']}">
                 {methods_html}
               </div>
             </div>
           """
+
         umlDiagram.appendChild(classElement)
 
-    addEventListeners()
+    # 
     resizeUmlClasses()
+    
 
 # =========================
 # JSON-Export & Import (UI)
