@@ -73,7 +73,7 @@ def get_attr_type(attr_value):
 
 def build_getter_signature(attr_name, attr_type):
     """Build getter method signature"""
-    return_type = f":{attr_type}" if attr_type else ""
+    return_type = f"{attr_type}" if attr_type else ""
     return f"{generate_getter_name(attr_name)}():{return_type}"
 
 def build_setter_signature(attr_name, attr_type):
@@ -708,9 +708,7 @@ def handle_setter_click(event):
                     return
 
 def add_getter_method(umlClass, attr_name, attr_type):
-    if not attr_type or not attr_name:
-        window.alert("Um eine Getter-Methode zu erstellen, muss der Attributname und der Typ angegeben werden.")
-        return
+    
     """Fügt eine Getter-Methode hinzu"""
     global nextMethodId
     getter_signature = build_getter_signature(attr_name, attr_type)
@@ -729,9 +727,6 @@ def add_getter_method(umlClass, attr_name, attr_type):
     nextMethodId += 1
 
 def add_setter_method(umlClass, attr_name, attr_type):
-    if not attr_type or not attr_name:
-        window.alert("Um eine Setter-Methode zu erstellen, muss der Attributname und der Typ angegeben werden.")
-        return
     """Fügt eine Setter-Methode hinzu"""
     global nextMethodId
     setter_signature = build_setter_signature(attr_name, attr_type)
@@ -798,23 +793,21 @@ def updateGetterSetterButtons():
             if getter_btn:
                 if has_getter:
                     getter_btn.title = f"Getter für '{attr_name}' existiert"
-                    getter_btn.style.color = "white"
+                    getter_btn.style.color = "rgb(211, 211, 211)"
                     getter_btn.disabled = True  # 禁用按钮
                 else:
-                    getter_btn.style.backgroundColor = "#00000033"  # 半透明
                     getter_btn.title = f"Getter für '{attr_name}' hinzufügen"
-                    getter_btn.style.color = "rgb(211, 211, 211)"
+                    getter_btn.style.color = "black"
                     getter_btn.disabled = False  # 启用按钮
             
             if setter_btn:
                 if has_setter:
                     setter_btn.title = f"Setter für '{attr_name}' existiert"
-                    setter_btn.style.color = "white"
+                    setter_btn.style.color = "rgb(211, 211, 211)"
                     setter_btn.disabled = True  # 禁用按钮
                 else:
-                    setter_btn.style.backgroundColor = "#00000033"  # 半透明
                     setter_btn.title = f"Setter für '{attr_name}' hinzufügen"
-                    setter_btn.style.color = "rgb(211, 211, 211)"
+                    setter_btn.style.color = "black"
                     setter_btn.disabled = False  # 启用按钮
 
 def removeAttribute(classId, attrId):
@@ -964,24 +957,9 @@ def generateCode():
             if params_text:
                 parameters = params_text.split(",")
                 for i, param in enumerate(parameters):
-                    # Zugriffstyp des Attributs ermitteln
-                    for attr in umlClass["attributes"]:
-                        attribute = attr["attr"]
-                        parts = [a.strip() for a in attribute.split(":")]
-                        current_attr_name = parts[0] if len(parts) > 0 else ""
-                        if current_attr_name == param.split(":")[0].strip() if ":" in param else param.strip():
-                            paramAccess = attr.get("access", "")
-                            break
-                    if paramAccess == "-":  # privates Attribut
-                        vorParam = "__"
-                    elif paramAccess == "#":  # protected Attribut
-                        vorParam = "_"
-                    else:  # öffentliches Attribut
-                        vorParam = ""
-                        
                     param = param.strip()
                     code += ", "
-                    code += f"{vorParam}{param}"
+                    code += f"{param}"
 
             code += "):</div>"
 
@@ -1069,20 +1047,24 @@ def generateCode():
                                     code += ", "
                                 code += f"{param}"
                         else:
-                            # Kein Typ angegeben, meldung ausgeben
                             if i > 0:
                                 code += ", "
-                            code += f"{param}  <span class=\"code-warning\"># !! Kein Typ angegeben</span>"
+                            code += f"{param}"
 
-            code += "):"
+            code += ")"
+            methodeInhalt = False
             
             # Methode Rückgabewert
             for methode in umlClass["methods"]:
                 if methode["id"] == method["id"]:
                     if "):" in methode["methode"] and methode["methode"].split("):")[-1].strip() != "":
                         return_type = methode["methode"].split("):")[-1].strip()
-                        code += f"&nbsp; -> <span class=\"code-type\">{return_type}</span></div>"
+                        code += f"&nbsp; -> <span class=\"code-type\">{return_type}:</span></div>"
+                        methodeInhalt= True
                     break
+            
+            if(not methodeInhalt):
+                code += ":"
             
             parametersPart = []
             if "(" in method["methode"] and ")" in method["methode"]:
@@ -1093,7 +1075,20 @@ def generateCode():
             # Getter Methode
             if(methodename.startswith("get_")):
                 attr_name = methodename[4:]
-                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name}</span></div>"
+                for attr in umlClass["attributes"]:
+                    attribute = attr["attr"]
+                    parts = [a.strip() for a in attribute.split(":")]
+                    current_attr_name = parts[0] if len(parts) > 0 else ""
+                    if current_attr_name == attr_name:
+                        paramAccess = attr.get("access", "")
+                        break
+                if paramAccess == "-":  # privates Attribut
+                    vorParam = "__"
+                elif paramAccess == "#":  # protected Attribut
+                    vorParam = "_"
+                else:  # öffentliches Attribut
+                    vorParam = ""
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">return</span> <span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{vorParam}{attr_name}</span></div>"
             
             # Setter Methode
             elif(methodename.startswith("set_")):
@@ -1114,7 +1109,20 @@ def generateCode():
                         code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-warning\">!! keine Attribute / Parameter</span></div>"
                         code += "<div class=\"code-line\"></div>"
                         continue
-                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{attr_name} = {param_name}</span></div>"
+                for attr in umlClass["attributes"]:
+                    attribute = attr["attr"]
+                    parts = [a.strip() for a in attribute.split(":")]
+                    current_attr_name = parts[0] if len(parts) > 0 else ""
+                    if current_attr_name == attr_name:
+                        paramAccess = attr.get("access", "")
+                        break
+                if paramAccess == "-":  # privates Attribut
+                    vorParam = "__"
+                elif paramAccess == "#":  # protected Attribut
+                    vorParam = "_"
+                else:  # öffentliches Attribut
+                    vorParam = ""
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{vorParam}{attr_name} = {param_name}</span></div>"
             # Sonstige Methoden
             else:
                 #code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
