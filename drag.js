@@ -34,6 +34,10 @@ class UMLDragger {
     if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'button') {
       return;
     }
+    // Interaktive Inhalte innerhalb der Klassenliste nicht als Klassen-Drag behandeln
+    if (e.target.closest && e.target.closest('[data-no-class-drag="true"]')) {
+      return;
+    }
     if (this.umlElement.contains(e.target)) {
       this.initialX = e.clientX - this.xOffset;
       this.initialY = e.clientY - this.yOffset;
