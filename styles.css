@@ -108,6 +108,7 @@
       }
           
       .uml-diagram {
+        --drag-edge-zone-size: 30px;
         width: max-content;
         min-width: 240px;
         height: auto;
@@ -115,13 +116,37 @@
         flex-direction: column;
         z-index: 100;
         align-items: flex-start;
-        padding: 12px;
-        border: 2px dashed transparent;
+        padding: var(--drag-edge-zone-size);
+        border: 2px dashed transparent; 
+        /* border: 2px dashed #3498db; */
         border-radius: 12px;
         cursor: grab;
         overflow-x: visible;
         position: relative;
         z-index: 2;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+      }
+
+      .uml-diagram.edge-hover {
+        border-color: rgba(52, 152, 219, 0.9);
+        background-color: rgba(52, 152, 219, 0.05);
+        box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.15);
+        animation: drag-zone-pulse 1.1s ease-in-out infinite;
+      }
+
+      @keyframes drag-zone-pulse {
+        0%, 100% {
+          box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.12);
+        }
+        50% {
+          box-shadow: 0 0 0 6px rgba(52, 152, 219, 0.22);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .uml-diagram.edge-hover {
+          animation: none;
+        }
       }
           
       .uml-class {

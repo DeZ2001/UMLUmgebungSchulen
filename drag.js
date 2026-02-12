@@ -19,6 +19,8 @@ class UMLDragger {
    // Ereignisse initialisieren
   init() {
     this.umlElement.addEventListener('mousedown', (e) => this.dragStart(e));
+    this.umlElement.addEventListener('mousemove', (e) => this.updateEdgeHover(e));
+    this.umlElement.addEventListener('mouseleave', () => this.clearEdgeHover());
     document.addEventListener('mousemove', (e) => this.drag(e));
     document.addEventListener('mouseup', () => this.dragEnd());
     this.umlElement.addEventListener('touchstart', (e) => this.dragStart(e.touches[0]));
@@ -33,6 +35,7 @@ class UMLDragger {
     if (e.target !== this.umlElement) {
       return;
     }
+    this.clearEdgeHover();
     this.initialX = e.clientX - this.xOffset;
     this.initialY = e.clientY - this.yOffset;
     this.isDragging = true;
@@ -56,9 +59,23 @@ class UMLDragger {
   // Drag beenden
   dragEnd() {
     this.isDragging = false;
-    this.umlElement.style.cursor = 'move';
+    this.umlElement.style.cursor = 'grab';
     this.umlElement.style.boxShadow = '';
     this.savePosition();
+  }
+
+  // Hover-Status nur für Rand-Zone
+  updateEdgeHover(e) {
+    if (this.isDragging) {
+      this.clearEdgeHover();
+      return;
+    }
+    const isOnEdgeZone = e.target === this.umlElement;
+    this.umlElement.classList.toggle('edge-hover', isOnEdgeZone);
+  }
+
+  clearEdgeHover() {
+    this.umlElement.classList.remove('edge-hover');
   }
  
   // Position anwenden
