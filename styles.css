@@ -68,9 +68,11 @@
    
       .panels-container {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 20px;
         transition: all 0.3s ease;
+        position: relative;
+        overflow: visible;
       }
           
       .panel {
@@ -82,6 +84,8 @@
         display: flex;
         flex-direction: column;
         transition: all 0.3s ease;
+        position: relative;
+        z-index: 1;
       }
           
       .panel-header {
@@ -104,13 +108,20 @@
       }
           
       .uml-diagram {
-        width: 75%;
+        width: max-content;
         min-width: 240px;
         height: auto;
         display: flex;
         flex-direction: column;
         z-index: 100;
         align-items: flex-start;
+        padding: 12px;
+        border: 2px dashed transparent;
+        border-radius: 12px;
+        cursor: grab;
+        overflow-x: visible;
+        position: relative;
+        z-index: 2;
       }
           
       .uml-class {
@@ -119,6 +130,7 @@
         cursor: move;
 
       }
+
       
           
       .uml-class-header {
