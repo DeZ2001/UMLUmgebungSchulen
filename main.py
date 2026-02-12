@@ -874,7 +874,6 @@ def addAttribute(classId):
             nextAttributeId += 1
             sync_constructor_method(umlClass)
             renderUmlDiagram()
-            generateCode()
             return
 
 # Fügt eine Methode hinzu
@@ -891,7 +890,6 @@ def addMethod(classId):
             nextMethodId += 1
             updateGetterSetterButtons()
             renderUmlDiagram()
-            generateCode()
             return
         
 def handle_getter_click(event):
