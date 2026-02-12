@@ -192,9 +192,7 @@
       }
 
       .constructor-item .drag-handle-placeholder {
-        display: inline-block;
-        width: 14px;
-        margin-right: 6px;
+        display: none;
       }
 
       .uml-item input {
