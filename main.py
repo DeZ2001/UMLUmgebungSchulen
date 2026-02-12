@@ -1115,8 +1115,8 @@ def getValueForType(type_value):
         "int": "0",
         "Float": "0.0",
         "float": "0.0",
-        "Boolean": "false",
-        "bool": "false",
+        "Boolean": "True",
+        "bool": "True",
         "List": "[]",
         "list": "[]",
         "Dict": "{}",
@@ -1191,9 +1191,30 @@ def generateCode():
             for param in param_list:
                 paramName = param.split(":")[0].strip() if ":" in param else param.strip()
                 paramAccess = ""
-                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{paramName} = {paramName}</span></div>"
+                for attr in umlClass["attributes"]:
+                    attribute = attr["attr"]
+                    parts = [a.strip() for a in attribute.split(":")]
+                    current_attr_name = parts[0] if len(parts) > 0 else ""
+                    if current_attr_name == paramName:
+                        access = attr.get("access", "")
+                        if access == "-":  # privates Attribut
+                            paramAccess = "__"
+                        elif access == "#":  # protected Attribut
+                            paramAccess = "_"
+                        break
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{paramAccess}{paramName} = {paramName}</span></div>"
             if not param_list:
-                code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
+                for attr in umlClass["attributes"]:
+                    attribute = attr["attr"]
+                    parts = [a.strip() for a in attribute.split(":")]
+                    current_attr_name = parts[0] if len(parts) > 0 else ""
+                    current_attr_type = parts[1] if len(parts) > 1 else ""
+                    access = attr.get("access", "")
+                    if access == "-":  # privates Attribut
+                        paramAccess = "__"
+                    elif access == "#":  # protected Attribut
+                        paramAccess = "_"
+                    code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{paramAccess}{current_attr_name} = {getValueForType(current_attr_type)}</span></div>"
             code += "<div class=\"code-line\"></div>"
         
                
@@ -1227,30 +1248,9 @@ def generateCode():
                                 vorParam = ""
                                 # Typ und Name extrahieren
                                 paramName, paramTyp = [p.strip() for p in param.split(":", 1)]
-                                
-                                for attr in umlClass["attributes"]:
-                                    attribute = attr["attr"]
-                                    parts = [a.strip() for a in attribute.split(":")]
-                                    current_attr_name = parts[0] if len(parts) > 0 else ""
-                                    if current_attr_name == paramName:
-                                        paramTypeFromAttr = parts[1] if len(parts) > 1 else ""
-                                        if paramTyp != paramTypeFromAttr:
-                                            break
-                                        else:
-                                            for attr in umlClass["attributes"]:
-                                                attribute = attr["attr"]
-                                                parts = [a.strip() for a in attribute.split(":")]
-                                                current_attr_name = parts[0] if len(parts) > 0 else ""
-                                                if current_attr_name == paramName:
-                                                    paramAccess = attr.get("access", "")
-                                                    if paramAccess == "-":  # privates Attribut
-                                                        vorParam = "__"
-                                                    elif paramAccess == "#":  # protected Attribut
-                                                        vorParam = "_"
-                                        break
                                 if i > 0:
                                     code += ", "
-                                code += f"{vorParam}{paramName}:{paramTyp}"
+                                code += f"{paramName}:{paramTyp}"
                             except:
                                 if i > 0:
                                     code += ", "
