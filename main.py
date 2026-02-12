@@ -275,19 +275,19 @@ def renderUmlDiagram():
                     <input type=\"text\" value=\"{attri['attr']}\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\" data-field=\"attr\" placeholder=\"Attributname:Datentyp\">
                     <button class=\"remove-attr\" id=\"remove\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\">×</button>
                     <!-- Getter-Button mit Tooltip -->
-                    <button class=\"add-btn getter\" 
+                    <button class=\"btn-small access-btn getter {getSelected(attri.get('has_getter'), 'g')}\" data-access=\"g\"
                             data-class-id=\"{umlClass['id']}\" 
                             data-attr-id=\"{attri['id']}\" 
                             {'disabled' if is_getter_button_disabled(umlClass, attri) else ''}
                             title=\"{"Getter bereits vorhanden" if is_getter_button_disabled(umlClass, attri) else "Getter-Methode generieren"}\"
-                            style=\"background: #00000033\">g</button>
+                            >g</button>
                     <!-- Setter-Button mit Tooltip -->
-                    <button class=\"add-btn setter\" 
+                    <button class=\"btn-small access-btn setter {getSelected(attri.get('has_setter'), 's')}\" data-access=\"s\"
                             data-class-id=\"{umlClass['id']}\" 
                             data-attr-id=\"{attri['id']}\" 
                             {'disabled' if is_setter_button_disabled(umlClass, attri) else ''}
                             title=\"{"Setter bereits vorhanden" if is_setter_button_disabled(umlClass, attri) else "Setter-Methode generieren"}\"
-                            style=\"background: #00000033\">s</button>
+                            ">s</button>
                   </div>
                 """
                 for attri in umlClass["attributes"]
@@ -1018,21 +1018,19 @@ def updateGetterSetterButtons():
             if getter_btn:
                 if has_getter:
                     getter_btn.title = f"Getter für '{attr_name}' existiert"
-                    getter_btn.style.color = "rgb(211, 211, 211)"
+                    getter_btn.style.color = "black"
                     getter_btn.disabled = True  # 禁用按钮
                 else:
                     getter_btn.title = f"Getter für '{attr_name}' hinzufügen"
-                    getter_btn.style.color = "black"
                     getter_btn.disabled = False  # 启用按钮
             
             if setter_btn:
                 if has_setter:
                     setter_btn.title = f"Setter für '{attr_name}' existiert"
-                    setter_btn.style.color = "rgb(211, 211, 211)"
+                    setter_btn.style.color = "black"
                     setter_btn.disabled = True  # 禁用按钮
                 else:
                     setter_btn.title = f"Setter für '{attr_name}' hinzufügen"
-                    setter_btn.style.color = "black"
                     setter_btn.disabled = False  # 启用按钮
 
 def removeAttribute(classId, attrId):
@@ -1193,21 +1191,7 @@ def generateCode():
             for param in param_list:
                 paramName = param.split(":")[0].strip() if ":" in param else param.strip()
                 paramAccess = ""
-                # Zugriffstyp des Attributs ermitteln
-                for attr in umlClass["attributes"]:
-                    attribute = attr["attr"]
-                    parts = [a.strip() for a in attribute.split(":")]
-                    current_attr_name = parts[0] if len(parts) > 0 else ""
-                    if current_attr_name == paramName:
-                        paramAccess = attr.get("access", "")
-                        break
-                if paramAccess == "-":  # privates Attribut
-                    vorParam = "__"
-                elif paramAccess == "#":  # protected Attribut
-                    vorParam = "_"
-                else:  # öffentliches Attribut
-                    vorParam = ""
-                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{vorParam}{paramName} = {paramName}</span></div>"
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{paramName} = {paramName}</span></div>"
             if not param_list:
                 code += "<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">pass</span></div>"
             code += "<div class=\"code-line\"></div>"
