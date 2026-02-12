@@ -153,6 +153,38 @@
         transition: background-color 0.2s;
       }
 
+      .drag-handle {
+        cursor: grab;
+        user-select: none;
+        color: #8d8d8d;
+        padding: 0 6px 0 2px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .sortable-item.sorting-drag {
+        opacity: 0.5;
+        background-color: #ebf4ff;
+      }
+
+      .sortable-item.drop-before {
+        border-top: 2px solid #3498db;
+      }
+
+      .sortable-item.drop-after {
+        border-bottom: 2px solid #3498db;
+      }
+
+      .sortable-list.drop-at-end {
+        box-shadow: inset 0 -2px 0 #3498db;
+      }
+
+      .constructor-item .drag-handle-placeholder {
+        display: inline-block;
+        width: 14px;
+        margin-right: 6px;
+      }
+
       .uml-item input {
         flex: 1; 
         min-width: 0; 
