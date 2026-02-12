@@ -439,6 +439,16 @@ def is_constructor_method(value):
     """ Prüft, ob eine Methode ein Konstruktor ist """
     return str(value).lstrip().startswith("c __init__")
 
+def is_explicit_empty_constructor(value):
+    """True, wenn der Nutzer explizit einen leeren Konstruktor eingibt (c __init__())."""
+    method_text = str(value).strip()
+    if not method_text.lstrip().startswith("c __init__"):
+        return False
+    if "(" not in method_text or ")" not in method_text:
+        return False
+    inside = method_text.split("(", 1)[1].split(")", 1)[0].strip()
+    return inside == ""
+
 def build_constructor_signature(umlClass):
     """ Erstellt die Konstruktor-Signatur automatisch """
     params = [attr["attr"] for attr in umlClass["attributes"]]
@@ -564,22 +574,32 @@ def updateMethod(classId, methodId, field, value):
                     
                     if field == "methode":
                         is_constructor = is_constructor_method(value)
-                        
+
                         if is_constructor:
                             method["access"] = ""
-                            signature = build_constructor_signature(umlClass)
-                            typed_params = get_constructor_params(umlClass, value, False)
-                            attr_params = get_attribute_param_list(umlClass)
-                            if value.strip() in ["c __init__", "c __init__()", signature] or typed_params == attr_params:
-                                method["auto"] = True
-                                sync_constructor_method(umlClass)
-                            else:
+
+                            # Wenn der Nutzer explizit einen leeren Konstruktor einträgt, soll er NICHT automatisch
+                            # mit den Attributen synchronisiert werden.
+                            if is_explicit_empty_constructor(value):
                                 method["auto"] = False
+                            else:
+                                signature = build_constructor_signature(umlClass)
+                                typed_params = get_constructor_params(umlClass, value, False)
+                                attr_params = get_attribute_param_list(umlClass)
+
+                                # Auto-Sync nur, wenn Nutzer "c __init__" (ohne explizite leere Klammern) nutzt,
+                                # die Signatur exakt der Auto-Signatur entspricht, oder Parameter den Attributen entsprechen.
+                                if value.strip() in ["c __init__", signature] or typed_params == attr_params:
+                                    method["auto"] = True
+                                    sync_constructor_method(umlClass)
+                                else:
+                                    method["auto"] = False
+
                             rerender = True
                         elif was_constructor:
                             method["auto"] = False
                             rerender = True
-                        
+
                         # 当方法名改变时，更新getter/setter按钮状态
                         updateGetterSetterButtons()
                     
