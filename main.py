@@ -699,69 +699,93 @@ def refresh_inputs(umlClass):
 # ====================================
 
 def updateAttribute(classId, attrId, field, value):
-    """ Aktualisiert ein Attribut """
+    """更新属性 + 自动同步 getter/setter"""
+
     for umlClass in umlClasses:
-        if umlClass["id"] == classId:
-            for attribute in umlClass["attributes"]:
-                if attribute["id"] == attrId:
-                    old_name = attribute.get("attr", "")
-                    old_attr_name = old_name.split(":")[0].strip() if ":" in old_name else old_name.strip()
-                    
-                    attribute[field] = value
-                     # 获取新的属性名
-                    new_attr_full = value
-                    new_attr_name = new_attr_full.split(":")[0].strip() if ":" in new_attr_full else new_attr_full.strip()
-                    
-                    # If attribute name changed, update corresponding getter/setter method names
-                    if field == "attr" and old_attr_name != new_attr_name and old_attr_name != "":
-                        update_getter_setter_names(umlClass, old_attr_name, new_attr_name)
-                    
-                    sync_constructor_method(umlClass)
-                    refresh_constructor_inputs(umlClass)
-                    
-                    # 更新按钮状态
-                    updateGetterSetterButtons()
-                    
-                    generateCode()
-                    resizeUmlClasses()
-                    return
+        if umlClass["id"] != classId:
+            continue
+
+        for attribute in umlClass["attributes"]:
+            if attribute["id"] != attrId:
+                continue
+
+            # ===== 旧属性名 =====
+            old_full = attribute.get("attr", "")
+            old_attr_name = old_full.split(":")[0].strip() if ":" in old_full else old_full.strip()
+
+            # ===== 更新属性 =====
+            attribute[field] = value
+
+            # ===== 新属性名 =====
+            new_full = attribute.get("attr", "")
+            new_attr_name = new_full.split(":")[0].strip() if ":" in new_full else new_full.strip()
+
+            # ⭐⭐⭐ 核心同步逻辑 ⭐⭐⭐
+            if old_attr_name or new_attr_name:
+                update_getter_setter_names(
+                    umlClass,
+                    old_attr_name,
+                    new_attr_name
+                )
+
+            # 构造函数同步
+            sync_constructor_method(umlClass)
+            refresh_constructor_inputs(umlClass)
+
+            # UI 更新
+            updateGetterSetterButtons()
+            generateCode()
+            resizeUmlClasses()
+
+            return
 
 def update_getter_setter_names(umlClass, old_attr_name, new_attr_name):
-    """Aktualisiert Getter/Setter-Methodennamen bei Attributnamenänderung"""
-    if not old_attr_name or not new_attr_name or old_attr_name == new_attr_name:
-        return
-    
+    """
+    当 attribute 改名或类型改变时：
+    自动同步 getter/setter 方法签名
+    """
+
+    # 找到新 attribute 类型
+    new_attr_type = ""
+    for attr in umlClass["attributes"]:
+        full = attr.get("attr", "")
+        if ":" in full:
+            name, typ = [x.strip() for x in full.split(":", 1)]
+        else:
+            name = full.strip()
+            typ = ""
+
+        if name == new_attr_name:
+            new_attr_type = typ
+            break
+
+    # 更新 getter/setter 方法
     for method in umlClass["methods"]:
-        method_text = method.get("methode", "")
-        if not method_text:
+        text = method.get("methode", "")
+        if not text:
             continue
-        
-        # 获取方法名（不包含参数）
-        method_name = method_text.split("(")[0].strip()
-        
-        # 检查是否是getter方法
-        if method_name == f"get_{old_attr_name}":
-            # 更新getter方法名
-            new_method_name = f"get_{new_attr_name}"
-            if "(" in method_text:
-                # 保留参数部分
-                params_part = method_text[method_text.find("("):]
-                method["methode"] = f"{new_method_name}{params_part}"
-            else:
-                method["methode"] = new_method_name
-        
-        # 检查是否是setter方法
-        elif method_name == f"set_{old_attr_name}":
-            # 更新setter方法名
-            new_method_name = f"set_{new_attr_name}"
-            if "(" in method_text:
-                # 保留参数部分
-                params_part = method_text[method_text.find("("):]
-                method["methode"] = f"{new_method_name}{params_part}"
-            else:
-                method["methode"] = new_method_name
-        
-        refresh_inputs(umlClass)
+
+        method_name = text.split("(")[0].strip()
+
+        # ===== getter =====
+        if method_name.startswith("get_"):
+            attr = method_name[4:]
+            if attr == old_attr_name or attr == new_attr_name:
+                method["methode"] = build_getter_signature(
+                    new_attr_name,
+                    new_attr_type
+                )
+
+        # ===== setter =====
+        elif method_name.startswith("set_"):
+            attr = method_name[4:]
+            if attr == old_attr_name or attr == new_attr_name:
+                method["methode"] = build_setter_signature(
+                    new_attr_name,
+                    new_attr_type
+                )
+
+    refresh_inputs(umlClass)
 
 
 def updateMethod(classId, methodId, field, value):
