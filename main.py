@@ -1195,6 +1195,7 @@ def generateCode():
                     attribute = attr["attr"]
                     parts = [a.strip() for a in attribute.split(":")]
                     current_attr_name = parts[0] if len(parts) > 0 else ""
+                    current_attr_type = parts[1] if len(parts) > 1 else ""
                     if current_attr_name == paramName:
                         access = attr.get("access", "")
                         if access == "-":  # privates Attribut
@@ -1202,7 +1203,7 @@ def generateCode():
                         elif access == "#":  # protected Attribut
                             paramAccess = "_"
                         break
-                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{paramAccess}{paramName} = {paramName}</span></div>"
+                code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{paramAccess}{paramName}: {current_attr_type} = {paramName}</span></div>"
             if not param_list:
                 for attr in umlClass["attributes"]:
                     attribute = attr["attr"]
@@ -1214,7 +1215,7 @@ def generateCode():
                         paramAccess = "__"
                     elif access == "#":  # protected Attribut
                         paramAccess = "_"
-                    code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{paramAccess}{current_attr_name} = {getValueForType(current_attr_type)}</span></div>"
+                    code += f"<div class=\"code-line\">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class=\"code-keyword\">self</span>.<span class=\"code-attribute\">{paramAccess}{current_attr_name}: {current_attr_type} = {getValueForType(current_attr_type)}</span></div>"
             code += "<div class=\"code-line\"></div>"
         
                
