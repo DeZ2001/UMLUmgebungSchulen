@@ -275,14 +275,14 @@ def renderUmlDiagram():
                     <input type=\"text\" value=\"{attri['attr']}\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\" data-field=\"attr\" placeholder=\"Attributname:Datentyp\">
                     <button class=\"remove-attr\" id=\"remove\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\">×</button>
                     <!-- Getter-Button mit Tooltip -->
-                    <button class=\"btn-small access-btn getter {getSelected(attri.get('has_getter'), 'g')}\" data-access=\"g\"
+                    <button class=\"btn-small-getter-setter access-btn-getter-setter getter \" data-access=\"g\"
                             data-class-id=\"{umlClass['id']}\" 
                             data-attr-id=\"{attri['id']}\" 
                             {'disabled' if is_getter_button_disabled(umlClass, attri) else ''}
                             title=\"{"Getter bereits vorhanden" if is_getter_button_disabled(umlClass, attri) else "Getter-Methode generieren"}\"
                             >g</button>
                     <!-- Setter-Button mit Tooltip -->
-                    <button class=\"btn-small access-btn setter {getSelected(attri.get('has_setter'), 's')}\" data-access=\"s\"
+                    <button class=\"btn-small-getter-setter access-btn-getter-setter setter \" data-access=\"s\"
                             data-class-id=\"{umlClass['id']}\" 
                             data-attr-id=\"{attri['id']}\" 
                             {'disabled' if is_setter_button_disabled(umlClass, attri) else ''}

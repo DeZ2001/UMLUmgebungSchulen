@@ -263,6 +263,18 @@
         /* border: 2px solid #ff0000; */
         /* border-radius: 50%; */
       }
+
+      .btn-small-getter-setter {
+        background-color: white;
+        padding: 2px 2px !important;
+        transition: all 0.3s ease;
+      }
+
+      .access-btn-getter-setter.selected {
+        color: #000000 !important;
+        /* border: 2px solid #ff0000; */
+        /* border-radius: 50%; */
+      }
           
       .add-btn {
         color: black !important;
