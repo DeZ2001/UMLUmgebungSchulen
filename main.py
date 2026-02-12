@@ -32,6 +32,12 @@ nextMethodId = 2
 UI_FONT = "15px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
 # Textbreiten messen
 measureTextWidth_canvas = None
+# Aktueller Zustand für Listen-Sortierung (Drag & Drop)
+current_sort_drag = {
+    "kind": None,
+    "class_id": None,
+    "item_id": None,
+}
 
 # ============================
 # DOM-Referenzen (UI-Elemente)
@@ -206,7 +212,7 @@ def measureTextWidth(text=""):
 
 def calculateClassWidth(umlClass):
     padding = 100
-    minWidth = 300
+    minWidth = 350
     umlDiagram = document.getElementById("umlDiagram")
     # Containerbreite bestimmen (für zukünftige Erweiterungen behalten)
     containerWidth = (
@@ -261,7 +267,8 @@ def renderUmlDiagram():
         attributes_html = "".join(
             [
                 f"""
-                  <div class=\"uml-item\">
+                  <div class=\"uml-item sortable-item\" draggable=\"true\" data-no-class-drag=\"true\" data-sort-kind=\"attr\" data-item-id=\"{attri['id']}\" data-class-id=\"{umlClass['id']}\">
+                    <span class=\"drag-handle\" title=\"Attribut ziehen\" data-no-class-drag=\"true\">::</span>
                     <button class=\"btn-small access-btn {getSelected(attri.get('access'), '+')}\" data-access=\"+\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\">+</button>
                     <button class=\"btn-small access-btn {getSelected(attri.get('access'), '-')}\" data-access=\"-\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\">-</button>
                     <button class=\"btn-small access-btn {getSelected(attri.get('access'), '#')}\" data-access=\"#\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\">#</button>
@@ -291,7 +298,8 @@ def renderUmlDiagram():
             [
                 (
                     f"""
-                  <div class=\"uml-item\">
+                  <div class=\"uml-item sortable-item\" draggable=\"true\" data-no-class-drag=\"true\" data-sort-kind=\"method\" data-item-id=\"{method['id']}\" data-class-id=\"{umlClass['id']}\">
+                    <span class=\"drag-handle\" title=\"Methode ziehen\" data-no-class-drag=\"true\">::</span>
                     <button class=\"btn-small access-btn {getSelected(method.get('access'), '+')}\" data-access=\"+\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\">+</button>
                     <button class=\"btn-small access-btn {getSelected(method.get('access'), '-')}\" data-access=\"-\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\">-</button>
                     <button class=\"btn-small access-btn {getSelected(method.get('access'), '#')}\" data-access=\"#\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\">#</button>
@@ -301,8 +309,8 @@ def renderUmlDiagram():
                     """
                     if not is_constructor_method(method.get("methode")) 
                     else f"""
-                  <div class=\"uml-item\">
-                    <div style=\"display: inline-block;\"></div>
+                  <div class=\"uml-item constructor-item\" data-no-class-drag=\"true\">
+                    <span class=\"drag-handle-placeholder\" aria-hidden=\"true\"></span>
                     <input type=\"text\" value=\"{method['methode']}\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\" data-field=\"methode\" placeholder=\"Methodenname(Parameter):Rückgabetyp\">
                   </div>
                     """
@@ -316,14 +324,14 @@ def renderUmlDiagram():
               <input type=\"text\" value=\"{umlClass['name']}\" data-class-id=\"{umlClass['id']}\"data-field=\"name\" placeholder=\"Klassenname\" style=\"text-align: center; border: none; background-color: white; width:90%\">
             </div>
             <div class=\"uml-class-attributes\">
-              <div class=\"attributes-list\" data-class-id=\"{umlClass['id']}\">
+              <div class=\"attributes-list sortable-list\" data-class-id=\"{umlClass['id']}\">
                 {attributes_html}
               </div>
               <button class=\"add-attr add-btn\" data-class-id=\"{umlClass['id']}\" style=\"width:100%; background-color: white; color:#000000 !important;\">+ </button>
             </div>
 
             <div class=\"uml-class-methods\">
-              <div class=\"methods-list\" data-class-id=\"{umlClass['id']}\">
+              <div class=\"methods-list sortable-list\" data-class-id=\"{umlClass['id']}\">
                 {methods_html}
               </div>
               <button class=\"add-method add-btn\" data-class-id=\"{umlClass['id']}\" style=\"width:100%; background-color: white; color:#000000 !important;\">+ </button>
@@ -355,6 +363,194 @@ def renderUmlDiagram():
             new_input.focus()
             if cursor_position is not None and hasattr(new_input, 'setSelectionRange'):
                 new_input.setSelectionRange(cursor_position, cursor_position)
+
+# =============================
+# Sortierung (Drag & Drop Liste)
+# =============================
+
+def _safe_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+def clear_sort_drop_markers():
+    """Entfernt visuelle Marker für mögliche Drop-Positionen."""
+    for item in document.querySelectorAll(".sortable-item.drop-before, .sortable-item.drop-after"):
+        item.classList.remove("drop-before")
+        item.classList.remove("drop-after")
+    for sortable_list in document.querySelectorAll(".sortable-list.drop-at-end"):
+        sortable_list.classList.remove("drop-at-end")
+
+def reset_sort_drag_state():
+    """Setzt den Drag-Zustand zurück."""
+    current_sort_drag["kind"] = None
+    current_sort_drag["class_id"] = None
+    current_sort_drag["item_id"] = None
+
+def is_matching_sort_drag(kind, class_id):
+    """Prüft, ob der aktuelle Drag-Vorgang zu Liste und Klasse passt."""
+    return (
+        current_sort_drag["kind"] == kind
+        and current_sort_drag["class_id"] == class_id
+        and current_sort_drag["item_id"] is not None
+    )
+
+def get_sort_kind_from_list_element(sort_list_elem):
+    if sort_list_elem.classList.contains("attributes-list"):
+        return "attr"
+    if sort_list_elem.classList.contains("methods-list"):
+        return "method"
+    return None
+
+def get_closest_sortable_item(target):
+    if target and hasattr(target, "closest"):
+        return target.closest(".sortable-item")
+    return None
+
+def reorder_class_items(classId, item_kind, source_item_id, target_item_id=None, place_before=True):
+    """Ordnet Attribute oder Methoden in einer Klasse neu an."""
+    for umlClass in umlClasses:
+        if umlClass["id"] != classId:
+            continue
+
+        items = umlClass["attributes"] if item_kind == "attr" else umlClass["methods"]
+        original_order = [item.get("id") for item in items]
+
+        source_index = None
+        for idx, item in enumerate(items):
+            if item.get("id") == source_item_id:
+                source_index = idx
+                break
+        if source_index is None:
+            return False
+
+        if target_item_id is not None and source_item_id == target_item_id:
+            return False
+
+        source_item = items.pop(source_index)
+
+        if target_item_id is None:
+            insert_index = len(items)
+        else:
+            target_index = None
+            for idx, item in enumerate(items):
+                if item.get("id") == target_item_id:
+                    target_index = idx
+                    break
+            if target_index is None:
+                items.insert(source_index, source_item)
+                return False
+            insert_index = target_index if place_before else target_index + 1
+
+        if item_kind == "method":
+            first_non_constructor = 0
+            while first_non_constructor < len(items) and is_constructor_method(items[first_non_constructor].get("methode")):
+                first_non_constructor += 1
+            insert_index = max(insert_index, first_non_constructor)
+
+        insert_index = max(0, min(insert_index, len(items)))
+        items.insert(insert_index, source_item)
+
+        if item_kind == "method":
+            constructors = [m for m in items if is_constructor_method(m.get("methode"))]
+            others = [m for m in items if not is_constructor_method(m.get("methode"))]
+            umlClass["methods"] = constructors + others
+            new_order = [item.get("id") for item in umlClass["methods"]]
+        else:
+            new_order = [item.get("id") for item in items]
+
+        return original_order != new_order
+    return False
+
+def handle_sort_drag_start(event):
+    target = event.currentTarget if event.currentTarget else event.target
+    if not target:
+        return
+
+    kind = target.getAttribute("data-sort-kind")
+    class_id = _safe_int(target.getAttribute("data-class-id"))
+    item_id = _safe_int(target.getAttribute("data-item-id"))
+    if kind not in ["attr", "method"] or class_id is None or item_id is None:
+        return
+
+    current_sort_drag["kind"] = kind
+    current_sort_drag["class_id"] = class_id
+    current_sort_drag["item_id"] = item_id
+
+    target.classList.add("sorting-drag")
+    if event.dataTransfer:
+        event.dataTransfer.effectAllowed = "move"
+        event.dataTransfer.setData("text/plain", f"{kind}:{class_id}:{item_id}")
+
+def handle_sort_drag_end(event):
+    target = event.currentTarget if event.currentTarget else event.target
+    if target and target.classList:
+        target.classList.remove("sorting-drag")
+    clear_sort_drop_markers()
+    reset_sort_drag_state()
+
+def handle_sort_list_dragover(event):
+    sort_list_elem = event.currentTarget if event.currentTarget else None
+    if not sort_list_elem:
+        return
+
+    kind = get_sort_kind_from_list_element(sort_list_elem)
+    class_id = _safe_int(sort_list_elem.getAttribute("data-class-id"))
+    if not kind or class_id is None or not is_matching_sort_drag(kind, class_id):
+        return
+
+    event.preventDefault()
+    if event.dataTransfer:
+        event.dataTransfer.dropEffect = "move"
+
+    clear_sort_drop_markers()
+    target_item = get_closest_sortable_item(event.target)
+    if (
+        target_item
+        and target_item.getAttribute("data-sort-kind") == kind
+        and _safe_int(target_item.getAttribute("data-class-id")) == class_id
+    ):
+        rect = target_item.getBoundingClientRect()
+        place_before = event.clientY < (rect.top + rect.height / 2)
+        target_item.classList.add("drop-before" if place_before else "drop-after")
+    else:
+        sort_list_elem.classList.add("drop-at-end")
+
+def handle_sort_list_drop(event):
+    sort_list_elem = event.currentTarget if event.currentTarget else None
+    if not sort_list_elem:
+        return
+
+    kind = get_sort_kind_from_list_element(sort_list_elem)
+    class_id = _safe_int(sort_list_elem.getAttribute("data-class-id"))
+    if not kind or class_id is None or not is_matching_sort_drag(kind, class_id):
+        return
+
+    event.preventDefault()
+
+    source_item_id = current_sort_drag["item_id"]
+    target_item = get_closest_sortable_item(event.target)
+    moved = False
+
+    if (
+        target_item
+        and target_item.getAttribute("data-sort-kind") == kind
+        and _safe_int(target_item.getAttribute("data-class-id")) == class_id
+    ):
+        target_item_id = _safe_int(target_item.getAttribute("data-item-id"))
+        rect = target_item.getBoundingClientRect()
+        place_before = event.clientY < (rect.top + rect.height / 2)
+        moved = reorder_class_items(class_id, kind, source_item_id, target_item_id, place_before)
+    else:
+        moved = reorder_class_items(class_id, kind, source_item_id, None, False)
+
+    clear_sort_drop_markers()
+    reset_sort_drag_state()
+
+    if moved:
+        renderUmlDiagram()
+        generateCode()
 
 # ====================================
 # Event-Handling & Benutzerinteraktion
@@ -421,6 +617,15 @@ def addEventListeners():
     for button in document.querySelectorAll(".setter"):
         add_listener(button, "click", handle_setter_click)
 
+    # Drag & Drop Sortierung für Attribute/Methoden
+    for sortable_item in document.querySelectorAll(".sortable-item"):
+        add_listener(sortable_item, "dragstart", handle_sort_drag_start)
+        add_listener(sortable_item, "dragend", handle_sort_drag_end)
+
+    for sortable_list in document.querySelectorAll(".sortable-list"):
+        add_listener(sortable_list, "dragover", handle_sort_list_dragover)
+        add_listener(sortable_list, "drop", handle_sort_list_drop)
+
 
 def updateClassName(classId, newName):
     """ Aktualisiert den Namen einer UML-Klasse """
@@ -438,6 +643,16 @@ def updateClassName(classId, newName):
 def is_constructor_method(value):
     """ Prüft, ob eine Methode ein Konstruktor ist """
     return str(value).lstrip().startswith("c __init__")
+
+def is_explicit_empty_constructor(value):
+    """True, wenn der Nutzer explizit einen leeren Konstruktor eingibt (c __init__())."""
+    method_text = str(value).strip()
+    if not method_text.lstrip().startswith("c __init__"):
+        return False
+    if "(" not in method_text or ")" not in method_text:
+        return False
+    inside = method_text.split("(", 1)[1].split(")", 1)[0].strip()
+    return inside == ""
 
 def build_constructor_signature(umlClass):
     """ Erstellt die Konstruktor-Signatur automatisch """
@@ -564,22 +779,32 @@ def updateMethod(classId, methodId, field, value):
                     
                     if field == "methode":
                         is_constructor = is_constructor_method(value)
-                        
+
                         if is_constructor:
                             method["access"] = ""
-                            signature = build_constructor_signature(umlClass)
-                            typed_params = get_constructor_params(umlClass, value, False)
-                            attr_params = get_attribute_param_list(umlClass)
-                            if value.strip() in ["c __init__", "c __init__()", signature] or typed_params == attr_params:
-                                method["auto"] = True
-                                sync_constructor_method(umlClass)
-                            else:
+
+                            # Wenn der Nutzer explizit einen leeren Konstruktor einträgt, soll er NICHT automatisch
+                            # mit den Attributen synchronisiert werden.
+                            if is_explicit_empty_constructor(value):
                                 method["auto"] = False
+                            else:
+                                signature = build_constructor_signature(umlClass)
+                                typed_params = get_constructor_params(umlClass, value, False)
+                                attr_params = get_attribute_param_list(umlClass)
+
+                                # Auto-Sync nur, wenn Nutzer "c __init__" (ohne explizite leere Klammern) nutzt,
+                                # die Signatur exakt der Auto-Signatur entspricht, oder Parameter den Attributen entsprechen.
+                                if value.strip() in ["c __init__", signature] or typed_params == attr_params:
+                                    method["auto"] = True
+                                    sync_constructor_method(umlClass)
+                                else:
+                                    method["auto"] = False
+
                             rerender = True
                         elif was_constructor:
                             method["auto"] = False
                             rerender = True
-                        
+
                         # 当方法名改变时，更新getter/setter按钮状态
                         updateGetterSetterButtons()
                     
@@ -964,9 +1189,24 @@ def generateCode():
             if params_text:
                 parameters = params_text.split(",")
                 for i, param in enumerate(parameters):
+                    # Zugriffstyp des Attributs ermitteln
+                    for attr in umlClass["attributes"]:
+                        attribute = attr["attr"]
+                        parts = [a.strip() for a in attribute.split(":")]
+                        current_attr_name = parts[0] if len(parts) > 0 else ""
+                        if current_attr_name == param.split(":")[0].strip() if ":" in param else param.strip():
+                            paramAccess = attr.get("access", "")
+                            break
+                    if paramAccess == "-":  # privates Attribut
+                        vorParam = "__"
+                    elif paramAccess == "#":  # protected Attribut
+                        vorParam = "_"
+                    else:  # öffentliches Attribut
+                        vorParam = ""
+                        
                     param = param.strip()
                     code += ", "
-                    code += f"{param}"
+                    code += f"{vorParam}{param}"
 
             code += "):</div>"
 
@@ -1166,7 +1406,7 @@ def ansichtModus():
                     <input type=\"text\" value=\"{access_display(method.get('access'))} {method['methode']}\" data-class-id=\"{umlClass['id']}\" data-method-id=\"{method['id']}\" data-field=\"methode\" placeholder=\"Methodenname(Parameter):Rückgabetyp\" readonly>
                   </div>
                 """
-                for method in umlClass["methods"]
+                for method in get_sorted_methods(umlClass)
             ]
         )
         # Klassendarstellung zusammensetzen
