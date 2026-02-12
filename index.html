@@ -30,7 +30,7 @@
         </div>
       </div>
       <!-- Panels für UML Diagramm und Code -->
-      <div class="panels-container">
+      <div class="panels-container" id ="panelsContainer">
         <!-- UML Diagramm Bereich -->
         <div class="uml-diagram" id="umlDiagram"></div>
         <!-- Generierter Python Code Bereich -->
@@ -68,9 +68,11 @@
     <!-- Unsichtbares File Input für JSON Import -->
     <input id="jsonFileInput" type="file" accept="application/json,.json" style="display: none;">
 
-     <!-- Python Script einbinden -->
-    <py-script src="main.py"></py-script>
     <!-- Drag & Drop Skript -->
     <script src="drag.js"></script>
+    
+     <!-- Python Script einbinden -->
+    <py-script src="main.py"></py-script>
+    
   </body>
 </html>
