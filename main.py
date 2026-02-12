@@ -212,7 +212,7 @@ def measureTextWidth(text=""):
 
 def calculateClassWidth(umlClass):
     padding = 100
-    minWidth = 300
+    minWidth = 350
     umlDiagram = document.getElementById("umlDiagram")
     # Containerbreite bestimmen
     containerWidth = (
