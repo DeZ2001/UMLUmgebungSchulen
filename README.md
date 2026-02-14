@@ -1,50 +1,74 @@
-# UML Class Designer (PyScript)
+# UML Klassenmodellierung (PyScript)
 
-A lightweight, browser-based UML class diagram editor that generates Python class code in real time. Built with PyScript (Python in the browser), plain HTML/CSS, and a small drag helper.
+Browserbasierter UML Klasseneditor mit Live-Generierung von Python-Code.  
+Stack: `index.html` + `styles.css` + `drag.js` + `main.py` (PyScript/Pyodide).
 
-## What it does
+## Lokaler Start
 
-- Create UML classes with attributes and methods
-- Set access modifiers (`+`, `-`, `#`)
-- Auto-sync constructors with attributes
-- Auto-generate getter/setter method bodies
-- Generate formatted Python code alongside the diagram
-- Toggle between edit and view modes
-- Export/import the diagram state as JSON
-- Drag the UML panel and persist its position in `localStorage`
-
-## How it works
-
-- **`index.html`** loads PyScript, the UI layout, and the drag handler.
-- **`main.py`** renders UML cards, handles UI events, and generates Python code.
-- **`drag.js`** enables dragging the UML panel and saves its position.
-- **`styles.css`** styles the editor, code panel, and modal dialogs.
-
-## Run locally
-
-Because PyScript loads resources via ES modules, you should serve the project with a local web server.
+macOS:
 
 ```bash
 python3 -m http.server
 ```
 
-Then open:
+Windows (PowerShell):
 
+```powershell
+py -m http.server
 ```
+
+Windows (CMD, falls `py` nicht verfuegbar):
+
+```bat
+python -m http.server
+```
+
+Dann im Browser:
+
+```text
 http://localhost:8000/index.html
 ```
 
-## Usage
+## Aktuelle Bedienlogik (wichtig)
 
-1. Enter a class name, then add attributes and methods.
-2. Use access buttons (`+`, `-`, `#`) to set visibility.
-3. Add `c __init__(...)` to create a constructor; attributes are synced automatically.
-4. Toggle the code panel with the code icon.
-5. Export or import JSON via the toolbar.
+### 1) UML Panel verschieben
 
-## Data format (export/import)
+- Das UML Panel (`#umlDiagram`) kann per Drag verschoben werden.
+- Der Drag startet nur, wenn direkt das Container-Element getroffen wird (`e.target === #umlDiagram`).
+- Praktisch bedeutet das: Ziehen funktioniert im Rand-/Padding-Bereich des UML Panels, nicht auf Inputs/Buttons innerhalb der Klasse.
+- Position wird in `localStorage` unter `umlPosition` gespeichert.
+- Button `Position zuruecksetzen` setzt die Position auf `(0,0)` und loescht `umlPosition`.
+- Nach JSON-Import wird `umlPosition` ebenfalls geloescht.
 
-The editor exports a JSON object like:
+### 2) Sortierung innerhalb einer Klasse
+
+- Attribute und Methoden sind als sortierbare Listen umgesetzt.
+- Reihenfolge wird per Drag-and-Drop geaendert.
+- Sortierung ist nur innerhalb derselben Klasse und desselben Typs erlaubt:
+  - Attribut nur in Attributliste
+  - Methode nur in Methodenliste
+- Konstruktoren (`c __init__...`) bleiben oben und werden nicht frei zwischen normalen Methoden einsortiert.
+
+### 3) Bearbeiten / Ansicht
+
+- `Bearbeitungsmodus`: UML voll editierbar.
+- `Ansichtsmodus`: UML Felder readonly gerendert.
+- `Code ein/ausblenden`: zeigt/versteckt die Python-Code-Seite.
+
+## UML und Code-Generierung
+
+- Zugriffsbuttons: `+`, `-`, `#`
+- Konstruktor-Erkennung ueber Prefix `c __init__`
+- Getter/Setter:
+  - Erzeugung ueber `g` / `s` Button pro Attribut
+  - Buttons werden deaktiviert, wenn passende Methode schon existiert
+- Generierter Python-Code wird live im rechten Panel aktualisiert.
+
+## JSON Export / Import
+
+- Export als JSON in Modal (kopieren oder Datei herunterladen)
+- Import per Textfeld oder Datei-Upload
+- Erwartetes Format:
 
 ```json
 {
@@ -52,19 +76,20 @@ The editor exports a JSON object like:
     {
       "id": 1,
       "name": "ClassName",
-      "attributes": [{ "id": 1, "attr": "name:str", "access": "+" }],
-      "methods": [{ "id": 1, "methode": "get_name():str", "access": "+" }]
+      "attributes": [
+        { "id": 1, "attr": "name:str", "access": "+" }
+      ],
+      "methods": [
+        { "id": 1, "methode": "c __init__(name:str)", "access": "" }
+      ]
     }
   ]
 }
 ```
 
-## Notes
+## Projektdateien
 
-- Constructor methods are recognized by the prefix `c __init__`.
-- Getter/setter methods are detected by name (`get_` / `set_`) and generate bodies automatically.
-- The drag position is saved in `localStorage` under `umlPosition`.
-
-## License
-
-Add your license here.
+- `index.html`: Layout, Toolbar, Modal, Script-Einbindung
+- `styles.css`: UI-Styling, responsive Regeln, Tooltip, Drag-Zustandsstile
+- `drag.js`: Panel-Drag inkl. Persistenz
+- `main.py`: Rendering, Event-Handling, Sortierung, Code-Generierung, JSON Import/Export
