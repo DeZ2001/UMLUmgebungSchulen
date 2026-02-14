@@ -1504,7 +1504,7 @@ def copyJsonToClipboard(event=None):
         def on_copy_error(e=None):
             """ Markiert den Text zur manuellen Kopie """
             jsonModalTextarea.select() 
-            document.execCommand("Kopieren")
+            document.execCommand("copy")
             closeJsonModal()
         # Erstellt Proxies für die Callback-Funktionen (Pyodide erforderlich)
         success_proxy = create_proxy(on_copy_success)
@@ -1515,7 +1515,7 @@ def copyJsonToClipboard(event=None):
         promise.then(success_proxy).catch(error_proxy)
     else:
         jsonModalTextarea.select()
-        document.execCommand("Kopieren")
+        document.execCommand("copy")
         closeJsonModal()
 
 # Liest den JSON-Text aus dem Export-Textfeld 
