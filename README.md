@@ -23,6 +23,19 @@ Windows (CMD, falls `py` nicht verfuegbar):
 python -m http.server
 ```
 
+Port-Hinweis:
+
+- Standardport ist `8000`.
+- Eigener Port (z. B. `8080`):
+
+```bash
+python3 -m http.server 8080
+```
+
+```powershell
+py -m http.server 8080
+```
+
 Dann im Browser:
 
 ```text
