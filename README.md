@@ -1,9 +1,9 @@
-# UML Klassenmodellierung (PyScript)
+# UML Class Modeling (PyScript)
 
-Browserbasierter UML Klasseneditor mit Live-Generierung von Python-Code.  
+Browser-based UML class editor with live Python code generation.  
 Stack: `index.html` + `styles.css` + `drag.js` + `main.py` (PyScript/Pyodide).
 
-## Lokaler Start
+## Local Start
 
 macOS:
 
@@ -17,16 +17,16 @@ Windows (PowerShell):
 py -m http.server
 ```
 
-Windows (CMD, falls `py` nicht verfuegbar):
+Windows (CMD, if `py` is not available):
 
 ```bat
 python -m http.server
 ```
 
-Port-Hinweis:
+Port note:
 
-- Standardport ist `8000`.
-- Eigener Port (z. B. `8080`):
+- Default port is `8000`.
+- Custom port example (`8080`):
 
 ```bash
 python3 -m http.server 8080
@@ -36,52 +36,58 @@ python3 -m http.server 8080
 py -m http.server 8080
 ```
 
-Dann im Browser:
+Then open in your browser:
 
 ```text
 http://localhost:8000/index.html
 ```
 
-## Aktuelle Bedienlogik (wichtig)
+If you started the server with a custom port, use the same port in the URL.
+Example for port `8080`:
 
-### 1) UML Panel verschieben
+```text
+http://localhost:8080/index.html
+```
 
-- Das UML Panel (`#umlDiagram`) kann per Drag verschoben werden.
-- Der Drag startet nur, wenn direkt das Container-Element getroffen wird (`e.target === #umlDiagram`).
-- Praktisch bedeutet das: Ziehen funktioniert im Rand-/Padding-Bereich des UML Panels, nicht auf Inputs/Buttons innerhalb der Klasse.
-- Position wird in `localStorage` unter `umlPosition` gespeichert.
-- Button `Position zuruecksetzen` setzt die Position auf `(0,0)` und loescht `umlPosition`.
-- Nach JSON-Import wird `umlPosition` ebenfalls geloescht.
+## Current Interaction Logic (Important)
 
-### 2) Sortierung innerhalb einer Klasse
+### 1) Move UML Panel
 
-- Attribute und Methoden sind als sortierbare Listen umgesetzt.
-- Reihenfolge wird per Drag-and-Drop geaendert.
-- Sortierung ist nur innerhalb derselben Klasse und desselben Typs erlaubt:
-  - Attribut nur in Attributliste
-  - Methode nur in Methodenliste
-- Konstruktoren (`c __init__...`) bleiben oben und werden nicht frei zwischen normalen Methoden einsortiert.
+- The UML panel (`#umlDiagram`) can be moved by dragging.
+- Drag only starts when the container itself is the event target (`e.target === #umlDiagram`).
+- In practice: dragging works in the panel border/padding area, not on inputs or buttons inside UML cards.
+- Position is stored in `localStorage` under `umlPosition`.
+- The `Position zuruecksetzen` button resets to `(0,0)` and clears `umlPosition`.
+- After JSON import, `umlPosition` is also cleared.
 
-### 3) Bearbeiten / Ansicht
+### 2) Sorting Inside a Class
 
-- `Bearbeitungsmodus`: UML voll editierbar.
-- `Ansichtsmodus`: UML Felder readonly gerendert.
-- `Code ein/ausblenden`: zeigt/versteckt die Python-Code-Seite.
+- Attributes and methods are implemented as sortable lists.
+- Order is changed via drag-and-drop.
+- Sorting is only allowed within the same class and same item type.
+- Attribute items can only be dropped in the attribute list.
+- Method items can only be dropped in the method list.
+- Constructors (`c __init__...`) stay at the top and are not freely mixed with regular methods.
 
-## UML und Code-Generierung
+### 3) Edit / View Modes
 
-- Zugriffsbuttons: `+`, `-`, `#`
-- Konstruktor-Erkennung ueber Prefix `c __init__`
-- Getter/Setter:
-  - Erzeugung ueber `g` / `s` Button pro Attribut
-  - Buttons werden deaktiviert, wenn passende Methode schon existiert
-- Generierter Python-Code wird live im rechten Panel aktualisiert.
+- `Bearbeitungsmodus`: UML is fully editable.
+- `Ansichtsmodus`: UML fields are rendered as readonly.
+- `Code ein/ausblenden`: shows/hides the Python code panel.
+
+## UML and Code Generation
+
+- Access buttons: `+`, `-`, `#`
+- Constructor detection by prefix `c __init__`
+- Getter/Setter are generated via `g` / `s` buttons per attribute.
+- Buttons are disabled when a matching method already exists.
+- Generated Python code updates live in the right panel.
 
 ## JSON Export / Import
 
-- Export als JSON in Modal (kopieren oder Datei herunterladen)
-- Import per Textfeld oder Datei-Upload
-- Erwartetes Format:
+- Export JSON in a modal (copy or download as file).
+- Import via textarea or file upload.
+- Expected format:
 
 ```json
 {
@@ -100,9 +106,9 @@ http://localhost:8000/index.html
 }
 ```
 
-## Projektdateien
+## Project Files
 
-- `index.html`: Layout, Toolbar, Modal, Script-Einbindung
-- `styles.css`: UI-Styling, responsive Regeln, Tooltip, Drag-Zustandsstile
-- `drag.js`: Panel-Drag inkl. Persistenz
-- `main.py`: Rendering, Event-Handling, Sortierung, Code-Generierung, JSON Import/Export
+- `index.html`: layout, toolbar, modal, script loading
+- `styles.css`: UI styling, responsive rules, tooltips, drag states
+- `drag.js`: panel dragging and persistence
+- `main.py`: rendering, event handling, sorting, code generation, JSON import/export
