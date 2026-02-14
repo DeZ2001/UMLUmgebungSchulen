@@ -49,6 +49,22 @@ Example for port `8080`:
 http://localhost:8080/index.html
 ```
 
+## Open-Source Packages and Dependencies
+
+This project is intentionally built with open-source dependencies only.
+
+| Component | Version / Source | Used In | Purpose | License |
+|---|---|---|---|---|
+| PyScript | `2024.2.1` via `https://pyscript.net/releases/2024.2.1/core.js` and `core.css` | `index.html` | Run Python directly in the browser (`<py-script>`) | Open source (see upstream `LICENSE`) |
+| Pyodide (runtime used by PyScript) | Included through the PyScript runtime | `main.py` (`from pyodide.ffi import create_proxy`) | Python runtime + JS/Python bridge in WebAssembly | Open source (see upstream `LICENSE`) |
+| Python Standard Library | Built into Python (`json`, `math`, `http.server`) | `main.py`, local start commands | Data handling, calculations, local web server | PSF License |
+| Browser Web APIs | Built into browser (`DOM`, `localStorage`, `FileReader`, `Clipboard API`) | `main.py`, `drag.js` | UI events, persistence, file import, clipboard fallback | Web standards (no extra package) |
+
+Notes:
+
+- No additional `pip` or `npm` packages are required for this project.
+- Toolbar SVG icons in `button/` are third-party assets (`*-svgrepo-com.svg`) and should be documented with their exact source URLs and licenses for final distribution.
+
 ## Current Interaction Logic (Important)
 
 ### 1) Move UML Panel
