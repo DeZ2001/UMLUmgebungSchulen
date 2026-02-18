@@ -704,7 +704,6 @@ def updateAttribute(classId, attrId, field, value):
     for umlClass in umlClasses:
         if umlClass["id"] != classId:
             continue
-
         for attribute in umlClass["attributes"]:
             if attribute["id"] != attrId:
                 continue
@@ -830,7 +829,7 @@ def updateMethod(classId, methodId, field, value):
                             rerender = True
 
                         # 当方法名改变时，更新getter/setter按钮状态
-                        updateGetterSetterButtons()
+                        renderUmlDiagram()
                     
                     # 总是生成代码（即使是普通更新）
                     generateCode()
