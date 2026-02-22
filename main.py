@@ -699,7 +699,7 @@ def refresh_inputs(umlClass):
 # ====================================
 
 def updateAttribute(classId, attrId, field, value):
-    """更新属性 + 自动同步 getter/setter"""
+    """Aktualisiert ein Attribut und synchronisiert ggf. Getter/Setter und Konstruktor"""
 
     for umlClass in umlClasses:
         if umlClass["id"] != classId:
@@ -709,18 +709,18 @@ def updateAttribute(classId, attrId, field, value):
             if attribute["id"] != attrId:
                 continue
 
-            # ===== 旧属性名 =====
+            # ===== alter Attribut =====
             old_full = attribute.get("attr", "")
             old_attr_name = old_full.split(":")[0].strip() if ":" in old_full else old_full.strip()
 
-            # ===== 更新属性 =====
+            # ===== Attribut aktualisieren =====
             attribute[field] = value
 
-            # ===== 新属性名 =====
+            # ===== neuer Attributname =====
             new_full = attribute.get("attr", "")
             new_attr_name = new_full.split(":")[0].strip() if ":" in new_full else new_full.strip()
 
-            # ⭐⭐⭐ 核心同步逻辑 ⭐⭐⭐
+            # Synchronisiere Getter/Setter, wenn sich der Attributname geändert hat oder der Typ geändert wurde (da Getter/Setter den Typ in der Signatur haben)
             if old_attr_name or new_attr_name:
                 update_getter_setter_names(
                     umlClass,
@@ -728,11 +728,11 @@ def updateAttribute(classId, attrId, field, value):
                     new_attr_name
                 )
 
-            # 构造函数同步
+            # Konstruktor synchronisieren, wenn sich der Attributname geändert hat (da Konstruktor-Parameter die Attributnamen haben)
             sync_constructor_method(umlClass)
             refresh_constructor_inputs(umlClass)
 
-            # UI 更新
+            # UI Updates
             updateGetterSetterButtons()
             generateCode()
             resizeUmlClasses()
@@ -741,11 +741,10 @@ def updateAttribute(classId, attrId, field, value):
 
 def update_getter_setter_names(umlClass, old_attr_name, new_attr_name):
     """
-    当 attribute 改名或类型改变时：
-    自动同步 getter/setter 方法签名
+    Wenn sich der Attributname ändert, müssen die Getter/Setter-Methoden entsprechend umbenannt werden, damit sie weiterhin mit dem Attribut synchronisiert werden können.
     """
 
-    # 找到新 attribute 类型
+    # Neuen Attributtyp ermitteln 
     new_attr_type = ""
     for attr in umlClass["attributes"]:
         full = attr.get("attr", "")
@@ -759,7 +758,7 @@ def update_getter_setter_names(umlClass, old_attr_name, new_attr_name):
             new_attr_type = typ
             break
 
-    # 更新 getter/setter 方法
+    # Getter/Setter-Methoden durchgehen und bei Namensänderung aktualisieren
     for method in umlClass["methods"]:
         text = method.get("methode", "")
         if not text:
@@ -797,7 +796,7 @@ def updateMethod(classId, methodId, field, value):
                     was_constructor = is_constructor_method(method.get("methode"))
                     old_value = method.get(field, "")
                     
-                    # 更新方法
+                    # Methode aktualisieren
                     method[field] = value
                     rerender = False
                     
@@ -829,14 +828,14 @@ def updateMethod(classId, methodId, field, value):
                             method["auto"] = False
                             rerender = True
 
-                        # 当方法名改变时，更新getter/setter按钮状态
+                        # Wenn sich der Methodenname ändert, müssen ggf. die Getter/Setter-Buttons aktualisiert werden, da sie von der Methodensignatur abhängen
                         updateGetterSetterButtons()
                     
-                    # 总是生成代码（即使是普通更新）
+                    # UI Updates
                     generateCode()
                     resizeUmlClasses()
                     
-                    # 如果需要重新渲染UML图
+                    # Falls das UML-Diagramm neu gerendert werden muss
                     if rerender:
                         renderUmlDiagram()
                     return
@@ -992,7 +991,7 @@ def add_setter_method(umlClass, attr_name, attr_type):
     nextMethodId += 1
     
 def updateGetterSetterButtons():
-    """根据现有方法更新所有属性的getter/setter按钮状态"""
+    """Aktualisiert die Zustände der Getter/Setter-Buttons basierend auf den vorhandenen Methoden für jedes Attribut."""
     for umlClass in umlClasses:
         class_id = umlClass["id"]
         
@@ -1000,17 +999,17 @@ def updateGetterSetterButtons():
             attr_id = attr["id"]
             attr_full = attr["attr"]
             
-            # 安全地提取属性名（处理可能为空的情况）
+            # Attributname extrahieren (auch bei möglichem None-Wert)
             if not attr_full:
                 attr_name = ""
             else:
                 attr_parts = attr_full.split(":")
                 attr_name = attr_parts[0].strip() if len(attr_parts) > 0 else attr_full.strip()
             
-            if not attr_name:  # 如果属性名为空，跳过
+            if not attr_name:  # Falls der Attributname leer ist, überspringen
                 continue
             
-            # 检查是否存在对应的方法
+            # Prüfen, ob Getter/Setter-Methoden für dieses Attribut existieren
             has_getter = False
             has_setter = False
             
@@ -1019,21 +1018,21 @@ def updateGetterSetterButtons():
                 if not method_text:
                     continue
                 
-                # 提取方法名（不包含参数）
+                # Methodennamen extrahieren (ohne Parameter)
                 if "(" in method_text:
                     method_name = method_text.split("(")[0].strip()
                 else:
                     method_name = method_text.strip()
                 
-                # 精确匹配getter（必须是 get_属性名）
+                # Präzise Übereinstimmung für Getter (muss get_Attributname sein)
                 if method_name == f"get_{attr_name}":
                     has_getter = True
                 
-                # 精确匹配setter（必须是 set_属性名）
+                # Präzise Übereinstimmung für Setter (muss set_Attributname sein)
                 if method_name == f"set_{attr_name}":
                     has_setter = True
             
-            # 更新按钮
+            # Aktualisiere die Buttons
             getter_btn = document.querySelector(f'.getter[data-class-id="{class_id}"][data-attr-id="{attr_id}"]')
             setter_btn = document.querySelector(f'.setter[data-class-id="{class_id}"][data-attr-id="{attr_id}"]')
             
@@ -1041,30 +1040,30 @@ def updateGetterSetterButtons():
                 if has_getter:
                     getter_btn.title = f"Getter für '{attr_name}' existiert"
                     getter_btn.style.color = "black"
-                    getter_btn.disabled = True  # 禁用按钮
+                    getter_btn.disabled = True  # Button deaktivieren, wenn Getter existiert
                 else:
                     getter_btn.title = f"Getter für '{attr_name}' hinzufügen"
-                    getter_btn.disabled = False  # 启用按钮
+                    getter_btn.disabled = False  # Button aktivieren, wenn kein Getter existiert
             
             if setter_btn:
                 if has_setter:
                     setter_btn.title = f"Setter für '{attr_name}' existiert"
                     setter_btn.style.color = "black"
-                    setter_btn.disabled = True  # 禁用按钮
+                    setter_btn.disabled = True  # Button deaktivieren, wenn Setter existiert
                 else:
                     setter_btn.title = f"Setter für '{attr_name}' hinzufügen"
-                    setter_btn.disabled = False  # 启用按钮
+                    setter_btn.disabled = False  # Button aktivieren, wenn kein Setter existiert
 
 def removeAttribute(classId, attrId):
     """Entfernt ein Attribut aus der Klasse"""
     for umlClass in umlClasses:
         if umlClass["id"] == classId:
-            # 先获取要删除的属性名
+            # Zuerst den zu löschenden Attributnamen ermitteln
             for attr in umlClass["attributes"]:
                 if attr["id"] == attrId:
                     attr_name = attr["attr"].split(":")[0].strip() if ":" in attr["attr"] else attr["attr"].strip()
                     
-                    # 删除对应的getter和setter方法
+                    # Lösche die entsprechenden Getter- und Setter-Methoden
                     umlClass["methods"] = [
                         m for m in umlClass["methods"] 
                         if not (
@@ -1073,10 +1072,10 @@ def removeAttribute(classId, attrId):
                     ]
                     break
             
-            # 然后删除属性本身
+            # Attribut löschen
             umlClass["attributes"] = [a for a in umlClass["attributes"] if a["id"] != attrId]
             sync_constructor_method(umlClass)
-            updateGetterSetterButtons()  # 更新按钮状态
+            updateGetterSetterButtons()  # Buttons aktualisieren
             renderUmlDiagram()
             generateCode()
             return
