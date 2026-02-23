@@ -1040,21 +1040,71 @@ def updateGetterSetterButtons():
             
             if getter_btn:
                 if has_getter:
-                    getter_btn.title = f"Getter für '{attr_name}' existiert"
-                    getter_btn.style.color = "black"
-                    getter_btn.disabled = True  # 禁用按钮
+                    if checkObGetterTypeRichtigIst(class_id, attr_name, get_attr_type(attr_full)):
+                        getter_btn.title = f"Getter für '{attr_name}' existiert und ist korrekt"
+                        getter_btn.style.color = "black"
+                        getter_btn.disabled = True  
+                    else:
+                        getter_btn.title = f"Getter für '{attr_name}' existiert, aber hat falschen Typ"
+                        getter_btn.disabled = False
                 else:
                     getter_btn.title = f"Getter für '{attr_name}' hinzufügen"
-                    getter_btn.disabled = False  # 启用按钮
+                    getter_btn.disabled = False  
             
             if setter_btn:
                 if has_setter:
-                    setter_btn.title = f"Setter für '{attr_name}' existiert"
-                    setter_btn.style.color = "black"
-                    setter_btn.disabled = True  # 禁用按钮
+                    if checkObSetterParamGeändert(class_id, attr_name, get_attr_type(attr_full)):
+                        if checkObRückgabeTypHandelt(class_id, attr_name) != "":
+                            return
+                        setter_btn.title = f"Setter für '{attr_name}' existiert und ist korrekt"
+                        setter_btn.style.color = "black"
+                        setter_btn.disabled = True  
+                    else:
+                        setter_btn.title = f"Setter für '{attr_name}' existiert, aber hat falschen Typ"
+                        setter_btn.disabled = False
                 else:
                     setter_btn.title = f"Setter für '{attr_name}' hinzufügen"
-                    setter_btn.disabled = False  # 启用按钮
+                    setter_btn.disabled = False  
+                    
+def checkObRückgabeTypHandelt(classId, attr_name):
+    """checkt, ob der vorhandene Setter überhaupt einen Rückgabetyp hat"""
+    for umlClass in umlClasses:
+        if umlClass["id"] == classId:
+            for method in umlClass["methods"]:
+                method_text = method.get("methode", "")
+                if method_text.startswith(f"set_{attr_name}("):
+                    # Parameter-Teil extrahieren
+                    if "(" in method_text and ")" in method_text:
+                        typ = method_text.split(")", 1)[1].strip()
+                        return typ
+    return None
+
+def checkObGetterTypeRichtigIst(classId, attr_name, attr_type):
+    """checkt, ob der vorhandene Getter den richtigen Rückgabetyp hat"""
+    for umlClass in umlClasses:
+        if umlClass["id"] == classId:
+            for method in umlClass["methods"]:
+                method_text = method.get("methode", "")
+                if method_text.startswith(f"get_{attr_name}("):
+                    # rückgabetyp extrahieren
+                    if ":" in method_text:
+                        return_type = method_text.split(":")[-1].strip()
+                        return return_type == attr_type
+    return False
+    
+def checkObSetterParamGeändert(classId, attr_name, attr_type):
+    """checkt, ob der vorhandene Setter den richtigen Parameter-Typ hat"""
+    for umlClass in umlClasses:
+        if umlClass["id"] == classId:
+            for method in umlClass["methods"]:
+                method_text = method.get("methode", "")
+                if method_text.startswith(f"set_{attr_name}("):
+                    if "(" in method_text and ")" in method_text:
+                        params_part = method_text.split("(", 1)[1].split(")", 1)[0].strip()
+                        if ":" in params_part:
+                            param_type = params_part.split(":")[-1].strip()
+                            return param_type == attr_type
+    return False
 
 def removeAttribute(classId, attrId):
     """Entfernt ein Attribut aus der Klasse"""
