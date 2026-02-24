@@ -39,8 +39,17 @@ http://localhost:8000/index.html
 1. Enter a class name, then add attributes and methods.
 2. Use access buttons (`+`, `-`, `#`) to set visibility.
 3. Add `c __init__(...)` to create a constructor; attributes are synced automatically.
-4. Toggle the code panel with the code icon.
-5. Export or import JSON via the toolbar.
+4. To move the UML diagram, click and drag only on empty space in the outer dashed area around the classes.
+5. Toggle the code panel with the code icon.
+6. Export or import JSON via the toolbar.
+
+## Drag Zone
+
+- You can drag the UML diagram only from the empty outer padded area of `#umlDiagram` (the dashed/hover-highlighted border zone around class cards).
+- You cannot start dragging from class cards, inputs, buttons, or method/attribute rows; those areas are for editing and sorting.
+- On hover, the zone gets a highlighted dashed border and pulse effect (`.edge-hover`) to show it is draggable.
+- The panel position is persisted in `localStorage` under `umlPosition` and restored on reload.
+- Use the reset control (`#resetSvg`) to return the panel to `(0, 0)` and clear the saved position.
 
 ## Data format (export/import)
 
