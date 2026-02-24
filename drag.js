@@ -71,7 +71,7 @@ class UMLDragger {
       return;
     }
     const isOnEdgeZone = e.target === this.umlElement;
-    this.umlElement.classList.toggle('edge-hover', isOnEdgeZone);
+    // this.umlElement.classList.toggle('edge-hover', isOnEdgeZone);
   }
 
   clearEdgeHover() {

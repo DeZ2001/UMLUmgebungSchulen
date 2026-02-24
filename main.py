@@ -275,14 +275,14 @@ def renderUmlDiagram():
                     <input type=\"text\" value=\"{attri['attr']}\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\" data-field=\"attr\" placeholder=\"Attributname:Datentyp\">
                     <button class=\"remove-attr\" id=\"remove\" data-class-id=\"{umlClass['id']}\" data-attr-id=\"{attri['id']}\">×</button>
                     <!-- Getter-Button mit Tooltip -->
-                    <button class=\"btn-small access-btn getter {getSelected(attri.get('has_getter'), 'g')}\" data-access=\"g\"
+                    <button class=\"btn-small-getter-setter access-btn-getter-setter getter \" data-access=\"g\"
                             data-class-id=\"{umlClass['id']}\" 
                             data-attr-id=\"{attri['id']}\" 
                             {'disabled' if is_getter_button_disabled(umlClass, attri) else ''}
                             title=\"{"Getter bereits vorhanden" if is_getter_button_disabled(umlClass, attri) else "Getter-Methode generieren"}\"
                             >g</button>
                     <!-- Setter-Button mit Tooltip -->
-                    <button class=\"btn-small access-btn setter {getSelected(attri.get('has_setter'), 's')}\" data-access=\"s\"
+                    <button class=\"btn-small-getter-setter access-btn-getter-setter setter \" data-access=\"s\"
                             data-class-id=\"{umlClass['id']}\" 
                             data-attr-id=\"{attri['id']}\" 
                             {'disabled' if is_setter_button_disabled(umlClass, attri) else ''}
@@ -873,7 +873,6 @@ def addAttribute(classId):
             nextAttributeId += 1
             sync_constructor_method(umlClass)
             renderUmlDiagram()
-            generateCode()
             return
 
 # Fügt eine Methode hinzu
@@ -890,7 +889,6 @@ def addMethod(classId):
             nextMethodId += 1
             updateGetterSetterButtons()
             renderUmlDiagram()
-            generateCode()
             return
         
 def handle_getter_click(event):
@@ -1555,7 +1553,7 @@ def copyJsonToClipboard(event=None):
         def on_copy_error(e=None):
             """ Markiert den Text zur manuellen Kopie """
             jsonModalTextarea.select() 
-            document.execCommand("Kopieren")
+            document.execCommand("copy")
             closeJsonModal()
         # Erstellt Proxies für die Callback-Funktionen (Pyodide erforderlich)
         success_proxy = create_proxy(on_copy_success)
@@ -1566,7 +1564,7 @@ def copyJsonToClipboard(event=None):
         promise.then(success_proxy).catch(error_proxy)
     else:
         jsonModalTextarea.select()
-        document.execCommand("Kopieren")
+        document.execCommand("copy")
         closeJsonModal()
 
 # Liest den JSON-Text aus dem Export-Textfeld 
