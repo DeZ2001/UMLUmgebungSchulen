@@ -1100,8 +1100,10 @@ def checkObSetterParamGeändert(classId, attr_name, attr_type):
                     if "(" in method_text and ")" in method_text:
                         params_part = method_text.split("(", 1)[1].split(")", 1)[0].strip()
                         if ":" in params_part:
+                            param_name = params_part.split(":")[0].strip()
                             param_type = params_part.split(":")[-1].strip()
-                            return param_type == attr_type
+                            return param_type == attr_type and param_name == attr_name
+                        return params_part.strip() == attr_name
     return False
 
 def removeAttribute(classId, attrId):
