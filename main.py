@@ -710,6 +710,10 @@ def updateAttribute(classId, attrId, field, value):
 
             # ===== Alter Attributname =====
             old_full = attribute.get("attr", "")
+            if(checkDuplicate_attribute(umlClass, attrId, value)):
+                from js import window
+                window.alert("Ein anderes Attribut mit diesem Namen existiert bereits. Bitte wähle einen anderen Namen, um Duplikate zu vermeiden.")
+                return
             old_attr_name = old_full.split(":")[0].strip() if ":" in old_full else old_full.strip()
 
             # ===== Attribut aktualisieren =====
@@ -737,6 +741,26 @@ def updateAttribute(classId, attrId, field, value):
             resizeUmlClasses()
 
             return
+        
+def checkDuplicate_attribute(umlClass, attrId, new_value):
+    """checkt, ob es ein anderes Attribut mit dem gleichen Namen gibt"""
+    if not new_value or new_value.strip() == "":
+        return False
+    
+    new_attr_name = new_value.strip()
+    
+    existing_attr_names = set()
+    for attribute in umlClass["attributes"]:
+        # springt über das Attribut hinweg, das gerade bearbeitet wird, damit
+        if attribute["id"] == attrId:
+            continue
+            
+        attr_str = attribute.get("attr", "")
+        if attr_str and attr_str.strip():
+            existing_name = attr_str.strip()
+            existing_attr_names.add(existing_name)
+
+    return new_attr_name in existing_attr_names
 
 def update_getter_setter_names(umlClass, old_attr_name, new_attr_name):
     """
@@ -793,9 +817,29 @@ def updateMethod(classId, methodId, field, value):
         if umlClass["id"] == classId:
             for method in umlClass["methods"]:
                 if method["id"] == methodId:
-                    was_constructor = is_constructor_method(method.get("methode"))
                     old_value = method.get(field, "")
                     
+                    # nur bei Änderung des Methodennamens auf Duplikate prüfen, damit
+                    if field == "methode":
+                        # duplizierten Methode prüfen
+                        if checkDuplicate_method(umlClass, methodId, value):
+                            # Warnung ausgeben
+                            from js import window
+                            window.alert("Der Methode existiert bereits. Bitte wähle einen anderen Namen, um Duplikate zu vermeiden.")
+                            
+                            # alten Wert wiederherstellen
+                            method[field] = value
+                            
+                            # falls die Methode zuvor ein Konstruktor war, Auto-Sync wieder aktivieren (da Konstruktorname unverändert bleibt)
+                            if is_constructor_method(old_value):
+                                method["auto"] = False
+                            
+                            # UI aktualisieren
+                            renderUmlDiagram()
+                            generateCode()
+                            return
+                    
+                    was_constructor = is_constructor_method(method.get("methode"))
                     # Methode aktualisieren
                     method[field] = value
                     rerender = False
@@ -839,6 +883,31 @@ def updateMethod(classId, methodId, field, value):
                     if rerender:
                         renderUmlDiagram()
                     return
+
+def checkDuplicate_method(umlClass, methodId, new_value):
+    """checkt, ob es eine andere Methode mit dem gleichen Namen gibt"""
+    if not new_value or new_value.strip() == "":
+        return False
+    
+    new_method = new_value.strip()
+    
+    existing_methode= set()
+    for method in umlClass["methods"]:
+        # springt über die Methode hinweg, die gerade bearbeitet wird, damit
+        if method["id"] == methodId:
+            continue
+            
+        method_text = method.get("methode")
+        if method_text and method_text.strip():
+            method = method_text.strip()
+            existing_methode.add(method)
+    
+    # checkt, ob der neue Methodenname bereits existiert (unabhängig von Parametern)
+    if new_method and new_method in existing_methode:
+        return True
+    
+    return False
+        
 
 # ======================
 # Hinzufügen & Entfernen
