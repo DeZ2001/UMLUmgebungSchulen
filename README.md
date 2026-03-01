@@ -3,30 +3,50 @@
 Browser-based UML class editor with live Python code generation.  
 Stack: `index.html` + `styles.css` + `drag.js` + `main.py` (PyScript/Pyodide).
 
-## Local Start
+## Local Start (VS Code)
 
-macOS:
+1) Clone the project in VS Code:
+
+- Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+- Run `Git: Clone`
+- Paste your repository URL (`<REPO-URL>`)
+- Choose a local folder and click `Open` when prompted
+
+Alternative via terminal:
 
 ```bash
-python3 -m http.server
+git clone <REPO-URL>
+cd UML
+code .
+```
+
+2) Start a local web server from the project root:
+
+macOS / Linux:
+
+```bash
+python3 -m http.server 8000
 ```
 
 Windows (PowerShell):
 
 ```powershell
-py -m http.server
+py -m http.server 8000
 ```
 
 Windows (CMD, if `py` is not available):
 
 ```bat
-python -m http.server
+python -m http.server 8000
 ```
 
-Port note:
+3) Open the app in your browser:
 
-- Default port is `8000`.
-- Custom port example (`8080`):
+```text
+http://localhost:8000/index.html
+```
+
+Custom port example (`8080`):
 
 ```bash
 python3 -m http.server 8080
@@ -35,15 +55,6 @@ python3 -m http.server 8080
 ```powershell
 py -m http.server 8080
 ```
-
-Then open in your browser:
-
-```text
-http://localhost:8000/index.html
-```
-
-If you started the server with a custom port, use the same port in the URL.
-Example for port `8080`:
 
 ```text
 http://localhost:8080/index.html
